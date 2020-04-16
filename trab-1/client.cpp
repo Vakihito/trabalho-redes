@@ -2,8 +2,6 @@
 #include <iostream> 
 #include <string>
 #include <vector>
-
-
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
 #include <string.h> 
@@ -36,16 +34,18 @@ int main(int argc, char const *argv[]) {
         cout << "404 - Não foi possível encontrar o servidor \n";
         return -1; 
     }
-
+    string aux_hello;
     while(true) {
         cout << "Digite a request: ";
-        cin >> hello;
-        cout << "Enviando request...\n";
+        getline(cin, aux_hello);
+        strcpy(hello, aux_hello.c_str());
+        cout << "Enviando request : ";
+        cout << "\033[1;34m" << hello << "\033[0m\n";
         send(sock, &hello , 4096, 0);
         cout << "Requisição enviada!\nAguardando response...\n";
         valread = recv( sock , &buffer, 4096, 0); 
         cout << "Response recebida: ";
-        cout << buffer << '\n';
+        cout << "\033[1;31m" << buffer << "\033[0m" << endl;
     }
     return 0; 
 } 
