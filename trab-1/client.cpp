@@ -1,5 +1,5 @@
 // Client side C/C++ program to demonstrate Socket programming 
-#include <iostream> 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -37,9 +37,13 @@ int main(int argc, char const *argv[]) {
         return -1; 
     }
 
+    char asd[10];
+
     while(true) {
         cout << "Digite a request: ";
-        cin >> hello;
+        cin.getline(hello, 10);
+        cin.getline(asd, 10);
+        cout << hello << '/' << asd << '\n';
         cout << "Enviando request...\n";
         send(sock, &hello , 4096, 0);
         cout << "Requisição enviada!\nAguardando response...\n";

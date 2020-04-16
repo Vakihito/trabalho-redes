@@ -50,15 +50,13 @@ int main(int argc, char const *argv[]) {
     } 
     cout << "Conexão estabelecida!\n";
 
-    cout << sizeof(hello) << '\n';
-
     while(true) {
         cout << "Aguardando request...\n";
         valread = recv(new_socket, &buffer, 4096, 0);
         cout << "Request recebida:\n";
         cout << buffer << '\n';
         cout << "Digite a response:\n";
-        cin >> hello;
+        cin.getline(hello, 4096);
         send(new_socket , &hello, sizeof(hello), 0 );
         cout << "Response enviada: ";
         cout << hello << '\n'; 
