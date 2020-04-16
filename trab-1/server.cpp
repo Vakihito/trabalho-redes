@@ -57,11 +57,10 @@ int main(int argc, char const *argv[]) {
     } 
     cout << "Conexão estabelecida!\n";
 
-    cout << sizeof(hello) << '\n';
-
     string aux_hello;
 
     while(true) {
+        tmp.clear();
         cout << "Aguardando request...\n";
         valread = recv(new_socket, &request, size_request + 1, 0);
         request[valread] = '\0';
@@ -73,10 +72,10 @@ int main(int argc, char const *argv[]) {
         cout << "\033[1;31m" << tmp << "\033[0m" << '\n';
         cout << "Digite a response:\n";
         getline(cin, aux_hello);
-        strcpy(hello, aux_hello.c_str());
-        send(new_socket , &hello, sizeof(hello), 0 );
+        strcpy(response, aux_hello.c_str());
+        send(new_socket , &response, sizeof(response), 0 );
         cout << "Response enviada: ";
-        cout << "\033[1;34m" << hello << "\033[0m\n";
+        cout << "\033[1;34m" << response << "\033[0m\n";
     }
     return 0; 
 } 
