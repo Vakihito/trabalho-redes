@@ -6,9 +6,8 @@
 </ul>
 Primeiramente precisamos ter o dois terminais
     <ul>
-        <li>   Em um use o seguinte comando : <code> ./a.out </code> </li>
-        <li>No outro terminal use o seguinte comando <code> telnet localhost 54000 </code></li>
+        <li>   Em um use o seguinte comando : <code> ./client.out </code> </li>
+        <li>No outro terminal use o seguinte comando <code> ./server.out </code></li>
     </ul>
-Feito isto, as mensagens enviadas pelo terminal em que o comando <code> telnet localhost 54000 </code> foi feito devem ser recebidas pelo o outro terminal
 
 Ubuntu 18.04.4 LTS (Bionic Beaver)
