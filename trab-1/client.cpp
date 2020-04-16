@@ -51,7 +51,7 @@ int main(int argc, char const *argv[]) {
         while(tmp.length() > size_request) {
             send(sock, &request, size_request + 1, 0);
             cout << "Enviando request...\n";
-            cout << "\033[1;34m" << request << "\033[0m\n";
+            cout << "\033[1;34m" << &request[1] << "\033[0m\n";
             tmp = tmp.substr(size_request);
             str_to_charA(&request[1], tmp, size_request);
         }
