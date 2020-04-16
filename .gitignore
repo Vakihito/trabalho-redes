@@ -1,6 +1,9 @@
+# MUST BE FIRST
 *
 !*/
 !*.*
+# MUST BE FIRST
 
+.vscode/
 *.in
 *.out

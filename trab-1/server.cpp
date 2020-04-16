@@ -8,15 +8,22 @@
 #include <netinet/in.h>
 #define PORT 8080 
 
+#define size_request 5
+
 using namespace std;
 
+// char_array length must be smaller or equal to n
+void concat_charA_to_str(string *str, char *char_array, unsigned int n) {
+    for (unsigned int i = 0; i < n; i++)
+        (*str).push_back(char_array[i]);
+    return;
+}
+
 int main(int argc, char const *argv[]) { 
-    int server_fd, new_socket, valread; 
     struct sockaddr_in address; 
-    int opt = 1; 
-    int addrlen = sizeof(address); 
-    char buffer[4096]; 
-    char hello[4096]; 
+    int server_fd, new_socket, valread, addrlen = sizeof(address), opt = 1;
+    string tmp;
+    char request[size_request + 1], response[size_request];
     
     printf("Configurando conexão...\n");
     // Creating socket file descriptor 
@@ -52,14 +59,19 @@ int main(int argc, char const *argv[]) {
 
     while(true) {
         cout << "Aguardando request...\n";
-        valread = recv(new_socket, &buffer, 4096, 0);
+        valread = recv(new_socket, &request, size_request + 1, 0);
+        request[valread] = '\0';
+        if (request[0] == 'i') {
+            concat_charA_to_str(&tmp, &request[1], valread);
+            continue;
+        } else concat_charA_to_str(&tmp, &request[1], valread - 1);
         cout << "Request recebida:\n";
-        cout << buffer << '\n';
+        cout << tmp << '\n';
         cout << "Digite a response:\n";
-        cin.getline(hello, 4096);
-        send(new_socket , &hello, sizeof(hello), 0 );
+        cin.getline(response, 4096);
+        send(new_socket , &response, size_request, 0 );
         cout << "Response enviada: ";
-        cout << hello << '\n'; 
+        cout << response << '\n'; 
     }
     return 0; 
 } 

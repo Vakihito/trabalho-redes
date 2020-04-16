@@ -8,14 +8,22 @@
 #include <arpa/inet.h> 
 #include <string.h> 
 #define PORT 8080 
+#define size_request 5
 
 using namespace std;
+
+void str_to_charA(char *char_array, string str, unsigned int n) {
+    for (unsigned int i = 0; i < n && i < str.length(); i++)
+        char_array[i] = str[i];
+    return;
+}
    
 int main(int argc, char const *argv[]) { 
     int sock = 0, valread; 
     struct sockaddr_in serv_addr; 
-    char buffer[4096]; 
-    char hello[4096]; 
+    string tmp;
+    char response[size_request], request[size_request + 1];
+
     cout << "Configurando conexão...\n";
     if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) { 
         cout << "Socket creation error \n";
@@ -37,19 +45,24 @@ int main(int argc, char const *argv[]) {
         return -1; 
     }
 
-    char asd[10];
-
     while(true) {
+        tmp.clear();
         cout << "Digite a request: ";
-        cin.getline(hello, 10);
-        cin.getline(asd, 10);
-        cout << hello << '/' << asd << '\n';
+        getline(cin, tmp);
+        request[0] = 'i';
+        str_to_charA(&request[1], tmp, size_request);
+        while(tmp.length() > size_request) {
+            send(sock, &request, size_request + 1, 0);
+            tmp = tmp.substr(size_request);
+            str_to_charA(&request[1], tmp, size_request);
+        }
+        request[0] = 'c';
         cout << "Enviando request...\n";
-        send(sock, &hello , 4096, 0);
+        send(sock, &request, tmp.length() + 1, 0);
         cout << "Requisição enviada!\nAguardando response...\n";
-        valread = recv( sock , &buffer, 4096, 0); 
+        valread = recv(sock, &response, size_request, 0); 
         cout << "Response recebida: ";
-        cout << buffer << '\n';
+        cout << response << '\n';
     }
     return 0; 
 } 
