@@ -68,7 +68,7 @@ int main(int argc, char const *argv[]) {
             continue;
         } else concat_charA_to_str(&tmp, &request[1], valread - 1);
         cout << "Request recebida:\n";
-        cout << tmp << '\n';
+        cout << "\033[1;31m" << tmp << "\033[0m\n";
         tmp.clear();
         cout << "Digite a response:\n";
         getline(cin, aux_hello);

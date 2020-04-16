@@ -55,12 +55,13 @@ int main(int argc, char const *argv[]) {
         }
         request[0] = 'c';
         cout << "Enviando request...\n";
+        cout << "\033[1;34m" << tmp << "\033[0m\n";
         send(sock, &request, tmp.length() + 1, 0);
         cout << "Requisição enviada!\nAguardando response...\n";
         valread = recv(sock, &response, size_request, 0); 
         response[valread] = '\0';
         cout << "Response recebida: ";
-        cout << response << '\n';
+        cout << "\033[1;31m" << response << "\033[0m\n";
     }
     return 0; 
 } 
