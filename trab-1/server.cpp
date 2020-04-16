@@ -67,6 +67,7 @@ int main(int argc, char const *argv[]) {
         } else concat_charA_to_str(&tmp, &request[1], valread - 1);
         cout << "Request recebida:\n";
         cout << tmp << '\n';
+        tmp.clear();
         cout << "Digite a response:\n";
         cin.getline(response, 4096);
         send(new_socket , &response, size_request, 0 );
