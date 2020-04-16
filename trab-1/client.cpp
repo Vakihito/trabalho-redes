@@ -58,6 +58,7 @@ int main(int argc, char const *argv[]) {
         send(sock, &request, tmp.length() + 1, 0);
         cout << "Requisição enviada!\nAguardando response...\n";
         valread = recv(sock, &response, size_request, 0); 
+        response[valread] = '\0';
         cout << "Response recebida: ";
         cout << response << '\n';
     }

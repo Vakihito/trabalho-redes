@@ -69,7 +69,12 @@ int main(int argc, char const *argv[]) {
             continue;
         } else concat_charA_to_str(&tmp, &request[1], valread - 1);
         cout << "Request recebida:\n";
+<<<<<<< HEAD
         cout << "\033[1;31m" << tmp << "\033[0m" << '\n';
+=======
+        cout << tmp << '\n';
+        tmp.clear();
+>>>>>>> tmp
         cout << "Digite a response:\n";
         getline(cin, aux_hello);
         strcpy(response, aux_hello.c_str());
