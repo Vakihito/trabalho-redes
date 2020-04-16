@@ -2,8 +2,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-
-
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
 #include <string.h> 
@@ -44,7 +42,6 @@ int main(int argc, char const *argv[]) {
         cout << "404 - Não foi possível encontrar o servidor \n";
         return -1; 
     }
-
     while(true) {
         tmp.clear();
         cout << "Digite a request: ";

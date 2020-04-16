@@ -2,7 +2,7 @@
 #include <iostream> 
 #include <string>
 #include <vector>
-
+#include <string.h>
 #include <sys/socket.h> 
 #include <stdlib.h> 
 #include <netinet/in.h>
@@ -57,6 +57,10 @@ int main(int argc, char const *argv[]) {
     } 
     cout << "Conexão estabelecida!\n";
 
+    cout << sizeof(hello) << '\n';
+
+    string aux_hello;
+
     while(true) {
         cout << "Aguardando request...\n";
         valread = recv(new_socket, &request, size_request + 1, 0);
@@ -66,12 +70,13 @@ int main(int argc, char const *argv[]) {
             continue;
         } else concat_charA_to_str(&tmp, &request[1], valread - 1);
         cout << "Request recebida:\n";
-        cout << tmp << '\n';
+        cout << "\033[1;31m" << tmp << "\033[0m" << '\n';
         cout << "Digite a response:\n";
-        cin.getline(response, 4096);
-        send(new_socket , &response, size_request, 0 );
+        getline(cin, aux_hello);
+        strcpy(hello, aux_hello.c_str());
+        send(new_socket , &hello, sizeof(hello), 0 );
         cout << "Response enviada: ";
-        cout << response << '\n'; 
+        cout << "\033[1;34m" << hello << "\033[0m\n";
     }
     return 0; 
 } 
