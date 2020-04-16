@@ -60,7 +60,6 @@ int main(int argc, char const *argv[]) {
     string aux_hello;
 
     while(true) {
-        tmp.clear();
         cout << "Aguardando request...\n";
         valread = recv(new_socket, &request, size_request + 1, 0);
         request[valread] = '\0';
