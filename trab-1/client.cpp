@@ -107,10 +107,12 @@ int main(int argc, char const *argv[]) {
         cout << "Aguardando response...\n";
         valread = recv(sock, &response, size_request + 1, 0);
         response[valread] = '\0';
-        if(response[0] == 'i') {
+        while(response[0] == 'i') {
             concat_charA_to_str(&aux_hello, &response[1], valread);
-            continue;
-        } else concat_charA_to_str(&aux_hello, &response[1], valread - 1);
+            valread = recv(sock, &response, size_request + 1, 0);
+            response[valread] = '\0';
+        }
+        concat_charA_to_str(&aux_hello, &response[1], valread - 1);
         print_name("Response","red");
         cout << aux_hello << endl;
         aux_hello.clear();
