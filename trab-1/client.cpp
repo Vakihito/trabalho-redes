@@ -5,10 +5,11 @@
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
 #include <string.h> 
+#include <unistd.h>
 
 #define NAME "Client"
 #define PORT 8080 
-#define size_request 5
+#define size_message 8
 
 using namespace std;
 
@@ -46,16 +47,75 @@ void concat_charA_to_str(string *str, char *char_array, unsigned int n) {
         (*str).push_back(char_array[i]);
     return;
 }
+
+void request(int server_socket) {
+    char request[size_message + 1];
+    string message;
+
+    print_name("Request","blue");
+    getline(cin, message);
+    request[0] = 'i';
+    str_to_charA(&request[1], message, size_message);
+    while(message.length() > size_message) {
+        send(server_socket, &request, size_message + 1, 0);
+        print_name("Sistema","yellow");
+        cout << "Enviando request ";
+        print_text(&request[1],"yellow",true);
+        message = message.substr(size_message);
+        str_to_charA(&request[1], message, size_message);
+    }
+    request[0] = 'c';
+    print_name("Sistema","yellow");
+    cout << "Enviando request ";
+    print_text(message,"yellow",true);
+    send(server_socket, &request, message.length() + 1, 0);
+    print_name("Sistema","green");
+    cout << "Requisição enviada!\n"; 
+    message.clear();
+
+    return;
+}
+
+bool response(int server_socket) {
+    bool exec = true;
+    int valread; 
+    char response[size_message + 1];
+    string message;
+
+    print_name("Sistema","yellow");
+    cout << "Aguardando response...\n";
+    valread = recv(server_socket, &response, size_message + 1, 0);
+    response[valread] = '\0';
+
+    while(response[0] == 'i') {
+        concat_charA_to_str(&message, &response[1], valread);
+        valread = recv(server_socket, &response, size_message + 1, 0);
+        response[valread] = '\0';
+    }
+
+    if(response[0] == 'e'){
+        print_name("Sistema","green");
+        print_text("Desconectando do servidor...","green",true);
+        exec = false;
+    } 
+
+    else {
+        print_name("Response","red");
+        concat_charA_to_str(&message, &response[1], valread - 1);
+        cout << message << endl;
+        message.clear();
+    }
+
+    return exec;
+}
    
 int main(int argc, char const *argv[]) { 
-    int sock = 0, valread; 
+    int server_socket = 0;
     struct sockaddr_in serv_addr; 
-    string tmp;
-    char response[size_request + 1], request[size_request + 1];
 
     print_name("Sistema","yellow");
     cout << "Configurando conexão...\n";
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0) { 
+    if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) { 
         cout << "Socket creation error \n";
         return -1; 
     } 
@@ -71,7 +131,7 @@ int main(int argc, char const *argv[]) {
 
     print_name("Sistema","yellow");
     cout << "Conectando...\n";
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) { 
+    if (connect(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) { 
         cout << "404 - Não foi possível encontrar o servidor \n";
         return -1; 
     }
@@ -79,43 +139,14 @@ int main(int argc, char const *argv[]) {
     print_name("Sistema","green");
     cout << "Conexão estabelecida!\n";
 
-    string aux_hello;
+    bool exec = true;
 
-    while(true) {
-        print_name("Request","blue");
-        getline(cin, tmp);
-        request[0] = 'i';
-        str_to_charA(&request[1], tmp, size_request);
-        while(tmp.length() > size_request) {
-            send(sock, &request, size_request + 1, 0);
-            print_name("Sistema","yellow");
-            cout << "Enviando request ";
-            print_text(&request[1],"yellow",true);
-            tmp = tmp.substr(size_request);
-            str_to_charA(&request[1], tmp, size_request);
-        }
-        request[0] = 'c';
-        print_name("Sistema","yellow");
-        cout << "Enviando request ";
-        print_text(tmp,"yellow",true);
-        send(sock, &request, tmp.length() + 1, 0);
-        print_name("Sistema","green");
-        cout << "Requisição enviada!\n"; 
-        tmp.clear();
-
-        print_name("Sistema","yellow");
-        cout << "Aguardando response...\n";
-        valread = recv(sock, &response, size_request + 1, 0);
-        response[valread] = '\0';
-        while(response[0] == 'i') {
-            concat_charA_to_str(&aux_hello, &response[1], valread);
-            valread = recv(sock, &response, size_request + 1, 0);
-            response[valread] = '\0';
-        }
-        concat_charA_to_str(&aux_hello, &response[1], valread - 1);
-        print_name("Response","red");
-        cout << aux_hello << endl;
-        aux_hello.clear();
+    while(exec) {
+        request(server_socket);
+        exec = response(server_socket);
     }
+
+    close(server_socket);
+
     return 0; 
 } 

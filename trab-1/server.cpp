@@ -6,10 +6,11 @@
 #include <sys/socket.h> 
 #include <stdlib.h> 
 #include <netinet/in.h>
+#include <unistd.h>
 
 #define NAME "Server"
 #define PORT 8080 
-#define size_request 5
+#define size_message 8
 
 using namespace std;
 
@@ -48,11 +49,94 @@ void concat_charA_to_str(string *str, char *char_array, unsigned int n) {
     return;
 }
 
+int check_commands(string message) {
+    if(message.compare("/exit") == 0) return 1;
+    else if(message.compare("/ping") == 0) return 2;
+
+    return 0; 
+}
+
+int request(int new_socket) {
+    int exec = 0;
+    int valread;
+    int instruction;
+    string message;
+    char request[size_message + 1];
+
+    print_name(NAME,"yellow");
+    cout << "Aguardando request...\n";
+    valread = recv(new_socket, &request, size_message + 1, 0);
+    request[valread] = '\0';
+    while (request[0] == 'i') { 
+        concat_charA_to_str(&message, &request[1], valread);
+        valread = recv(new_socket, &request, size_message + 1, 0);
+        request[valread] = '\0';
+    }
+    concat_charA_to_str(&message, &request[1], valread - 1);
+    print_name("Request","red");
+    cout << message << endl;
+
+    if(message[0] == '/') exec = check_commands(message);
+    message.clear();
+
+    return exec;
+}
+
+void response(int new_socket, int exec) {
+    string message;
+    char response[size_message + 1];
+
+    if(exec == 0) {
+        print_name("Response","blue");
+        getline(cin, message);
+        response[0] = 'i';
+        str_to_charA(&response[1], message, size_message);
+        while(message.length() > size_message) {
+            send(new_socket, &response, size_message + 1, 0);
+            print_name(NAME,"yellow");
+            cout << "Enviando response ";
+            print_text(&response[1],"yellow",true);
+            message = message.substr(size_message);
+            str_to_charA(&response[1], message, size_message);
+        }
+    }
+
+    else if(exec == 1) {
+        message = "Encerrando conexão com o cliente...";
+        print_name(NAME,"yellow");
+        print_text(message,"yellow",true);
+
+        response[0] = 'e';
+        send(new_socket, &response, message.length() + 1, 0);
+    }
+
+    else if(exec == 2) {
+        message = "pong";
+        response[0] = 'i';
+        str_to_charA(&response[1], message, size_message);
+
+        print_name("Response","blue");
+        cout << message << endl;
+    } 
+ 
+    if(exec != 1) {
+        response[0] = 'c';
+        print_name(NAME,"yellow");
+        cout << "Enviando response ";
+        print_text(message,"yellow",true);
+        send(new_socket, &response, message.length() + 1, 0);
+    }
+
+    print_name(NAME,"green");
+    cout << "Response enviada!...\n";
+    message.clear(); 
+
+    return;
+}
+
 int main(int argc, char const *argv[]) { 
     struct sockaddr_in address; 
-    int server_fd, new_socket, valread, addrlen = sizeof(address), opt = 1;
-    string tmp;
-    char request[size_request + 1], response[size_request + 1];
+    int server_fd, new_socket, addrlen = sizeof(address), opt = 1;
     
     print_name(NAME,"yellow");
     cout << "Configurando conexão..." << endl;
@@ -92,41 +176,14 @@ int main(int argc, char const *argv[]) {
     print_name(NAME,"green");
     cout << "Conexão estabelecida!\n";
 
-    string aux_hello;
+    int exec = 0;
 
-    while(true) {
-        print_name(NAME,"yellow");
-        cout << "Aguardando request...\n";
-        valread = recv(new_socket, &request, size_request + 1, 0);
-        request[valread] = '\0';
-        if (request[0] == 'i') {
-            concat_charA_to_str(&tmp, &request[1], valread);
-            continue;
-        } else concat_charA_to_str(&tmp, &request[1], valread - 1);
-        print_name("Request","red");
-        cout << tmp << endl;
-        tmp.clear();
-
-        print_name("Response","blue");
-        getline(cin, aux_hello);
-        response[0] = 'i';
-        str_to_charA(&response[1], aux_hello, size_request);
-        while(aux_hello.length() > size_request) {
-            send(new_socket, &response, size_request + 1, 0);
-            print_name(NAME,"yellow");
-            cout << "Enviando response ";
-            print_text(&response[1],"yellow",true);
-            aux_hello = aux_hello.substr(size_request);
-            str_to_charA(&response[1], aux_hello, size_request);
-        }
-        response[0] = 'c';
-        print_name(NAME,"yellow");
-        cout << "Enviando response ";
-        print_text(aux_hello,"yellow",true);
-        send(new_socket, &response, aux_hello.length() + 1, 0);
-        print_name(NAME,"green");
-        cout << "Response enviada!...\n";
-        aux_hello.clear();  
+    while(exec != 1) {
+        exec = request(new_socket);
+        response(new_socket,exec);
     }
+
+    close(new_socket);
+
     return 0; 
 } 
