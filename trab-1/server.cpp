@@ -50,7 +50,8 @@ void concat_charA_to_str(string *str, char *char_array, unsigned int n) {
 }
 
 int check_commands(string message) {
-    if(message.compare("/exit") == 0) return 1;
+    if (message.compare("/exit") == 0 || message.compare("/quit") == 0)
+        return 1;
     else if(message.compare("/ping") == 0) return 2;
 
     return 0; 
@@ -180,6 +181,7 @@ int main(int argc, char const *argv[]) {
 
     while(exec != 1) {
         exec = request(new_socket);
+        cout << "exec : " << exec << endl;
         response(new_socket,exec);
     }
 
