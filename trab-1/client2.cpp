@@ -8,20 +8,24 @@
 #include <unistd.h>
 #include <thread>
 
-#define NAME "Client"
-#define PORT 8080 
-#define size_message 8
+#define PORT 8080           //número da porta de comunicação
+#define size_id 11          //comprimento máximo do id de um usuário
+#define size_message 20     //comprimento máximo de uma mensagem
+#define size_nickname 50    //comprimento máximo do nome de usuário
 
 using namespace std;
 
-int exec = 0;
-bool stop = false;
+int exec = 0;           //código da operação recebida pelo servidor
+int id = 0;             //identificador do usuário na aplicação    
+string nickname;        //nome do usuário no servidor
+bool stop = false;      //controlador de execução da aplicação
 
 void print_name(string name, string color){
     if (color.compare("red") == 0) cout << "\033[1;31m" << "[" << name << "]: " <<"\033[0m";
     else if (color.compare("green") == 0) cout << "\033[1;32m" << "[" << name << "]: " <<"\033[0m";
     else if (color.compare("yellow") == 0) cout << "\033[1;33m" << "[" << name << "]: " <<"\033[0m";
     else if (color.compare("blue") == 0) cout << "\033[1;34m" << "[" << name << "]: " <<"\033[0m";
+    else if (color.compare("white") == 0) cout << "\033[1;314m" << name <<"\033[0m";
     else cout << "[" << name << "]: ";
 
     return;
@@ -32,6 +36,7 @@ void print_text(string text, string color, bool new_line){
     else if (color.compare("green") == 0) cout << "\033[1;32m" << text  <<"\033[0m";
     else if (color.compare("yellow") == 0) cout << "\033[1;33m" << text <<"\033[0m";
     else if (color.compare("blue") == 0) cout << "\033[1;34m" << text <<"\033[0m";
+    else if (color.compare("white") == 0) cout << "\033[1;314m" << text <<"\033[0m";
     else cout << text;
 
     if(new_line) cout << endl; 
@@ -50,6 +55,60 @@ void concat_charA_to_str(string *str, char *char_array, unsigned int n) {
     for (unsigned int i = 0; i < n; i++)
         (*str).push_back(char_array[i]);
     return;
+}
+
+int choose_nickname(int server_socket) {
+    int user_id = 0;                     //identificador do usuário na aplicação
+    char request[size_nickname + 1];     //bloco de requisição para o nome de usuário
+    char response[size_nickname + 1];    //bloco de resposta para o nome de usuário enviado
+    bool accept = false;                 //flag para verificação da validade do nome 
+
+    int valread;                         //número de bytes recebidos pela mensagem
+    string response_id;                  //id enviado pelo servidor como resposta (0 corresponde a um número inválido)
+
+    while(!accept) {
+       print_name("Aplicação","yellow");
+       cout << "Insira o seu nome de usuário: ";
+       getline(cin,nickname);
+
+       if(nickname.length() > 50) {
+          print_name("Aplicação","yellow"); 
+          cout << "Limite de 50 caracteres excedido. Insira outro nome" << endl;
+          continue;
+       }    
+
+       request[0] = 'n';
+       str_to_charA(&request[1], nickname, size_nickname);
+       send(server_socket, &request, nickname.length() + 1, 0);  
+
+       valread = recv(server_socket, &response, size_nickname + 1, 0);
+
+       if(response[0] == 'n') {
+           concat_charA_to_str(&response_id, &response[1], valread - 1);
+
+           if(response_id.compare("0") == 0) {
+               print_name("Aplicação", "yellow");
+               cout << "Nome já cadastrado no servidor" << endl;
+           }
+
+           else {
+               accept = true;
+               user_id = stoi(response_id);
+
+               print_name("Aplicação", "green");
+               cout << "Bem-vindx, ";
+               print_text(nickname,"green",false);
+               cout << "!" << endl;
+           }
+       }
+
+       else {
+           print_name("Aplicação","yellow");
+           cout << "Falha na resposta recebida. Tente novamente" << endl;
+       }
+    }
+
+    return user_id;
 }
 
 int check_commands(string message) {
@@ -98,10 +157,9 @@ void receive_message(int new_socket) {
     char request[size_message + 1];
 
     while(true) {
-
         valread = recv(new_socket, &request, size_message + 1, 0);
 
-        if (request[0] == 'e') {
+        if(request[0] == 'e') {
             print_name("Outro usuário", "blue");
             print_text("Encerrou o chat", "red", true);
             exit(0);
@@ -109,25 +167,28 @@ void receive_message(int new_socket) {
         }
 
         request[valread] = '\0';
-        while (request[0] == 'i') { 
+        while(request[0] == 'i') { 
             concat_charA_to_str(&message, &request[1], valread);
             valread = recv(new_socket, &request, size_message + 1, 0);
             request[valread] = '\0';
         }
 
-        concat_charA_to_str(&message, &request[1], valread - 1);
+        if(request[0] != 'n') {
+            concat_charA_to_str(&message, &request[1], valread - 1);
 
-        print_name("Outro usuário","yellow");
-        cout << message << '\n';
-        message.clear();
+            print_name("Outro usuário","red");
+            cout << message << '\n';
+            message.clear();
+        }
     }
 
     return;
 }
 
 void send_message(int new_socket) {
-    string message, tmp_message;
-    char response[size_message + 1];
+    string message, tmp_message;                  //mensagem do usuário
+    char response[size_id + size_message + 1];    //bloco de dados enviado ao servidor
+    int id_lenght;                                //número de caracteres ocupados pelo id do cliente (incluindo o '\0')
 
     while(!stop) {
         if(exec == 0) {
@@ -135,37 +196,40 @@ void send_message(int new_socket) {
             tmp_message = message;
 
             if (check_commands(message) == 1) {
-                print_name("Outro usuário", "blue");
+                print_name(nickname, "blue");
                 print_text("Encerrou o chat", "red", true);
                 exec = 1;
                 break;
             }
 
             response[0] = 'i';
-            str_to_charA(&response[1], message, size_message);
+            id_lenght = sprintf(&response[1],"%d", id) + 1;
+            str_to_charA(&response[1 + id_lenght], message, size_message);
 
             while(tmp_message.length() > size_message) {
-                send(new_socket, &response, size_message + 1, 0);
+                send(new_socket, &response, id_lenght + size_message + 1, 0);
                 tmp_message = tmp_message.substr(size_message);
-                str_to_charA(&response[1], tmp_message, size_message);
+                str_to_charA(&response[1 + id_lenght], tmp_message, size_message);
             }
         }
 
         else if(exec == 2) {
             message = "ping";
             response[0] = 'i';
-            str_to_charA(&response[1], message, size_message);
+            str_to_charA(&response[1 + id_lenght], message, size_message);
             cout << message << '\n';
         } 
     
         if(exec != 1) {
             response[0] = 'c';
-            print_name(NAME,"blue");
-            print_text(message,"yellow",true);
-            send(new_socket, &response, tmp_message.length() + 1, 0);
+            print_name(nickname,"blue");
+            print_text(message,"white",true);
+            send(new_socket, &response, 1 + id_lenght + tmp_message.length(), 0);
         }
+
         message.clear(); 
         tmp_message.clear();
+        memset(response, 0, size_id + size_message + 1);
     }
 
     return;
@@ -174,6 +238,7 @@ void send_message(int new_socket) {
 int main(int argc, char const *argv[]) { 
     
     int new_socket = socket_init();
+    id = choose_nickname(new_socket);
 
     thread receive_thread (receive_message, new_socket);
     thread response_thread (send_message, new_socket);
