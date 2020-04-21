@@ -1,7 +1,20 @@
+/*--Observações--*/
+/*
+
+>> Para facilitar o processamento das mensagens, foram estabelecidos alguns códigos, os quais são
+inseridos no 1 byte do bloco da requisição/resposta, de modo a identificar a operação correspondente.  
+* 'i': outros blocos serão enviados para compor a mensagem final
+* 'c': bloco final da mensagem
+* 'e': encerra conexão do cliente com o servidor
+* 'n': processamento de mensagem relacionada ao nome de um usuário
+
+*/
+
 // Server side C/C++ program to demonstrate Socket programming
 #include <iostream>
 #include <string>
 #include <vector>
+#include <map>
 #include <string.h>
 #include <sys/socket.h>
 #include <stdlib.h>
@@ -9,13 +22,18 @@
 #include <unistd.h>
 #include <thread>
 
-#define NAME "Server"
-#define PORT 8080
-#define size_message 8
+#define NAME "Server"    //nome do servidor
+#define PORT 8080        //número da porta de comunicação
+#define size_id 11       //comprimento máximo do id de um usuário
+#define size_message 20  //comprimento máximo de uma mensagem
+#define size_nickname 50 //comprimento máximo do nome de usuário
 
 using namespace std;
 
-int exec = 0;
+int exec = 0;                             //código para identificação da operação solicitada
+int user_id = 0;                          //variável para controle de criação dos identificadores de usuário
+map<int, pair<string, int>> users;        //estrutura para armazenamento das informações de cada usuário
+map<int, pair<string, int>>::iterator it; //iterador para busca dos usuários
 
 void print_name(string name, string color)
 {
@@ -35,6 +53,8 @@ void print_name(string name, string color)
         cout << "\033[1;34m"
              << "[" << name << "]: "
              << "\033[0m";
+    else if (color.compare("white") == 0)
+        cout << "\033[1;314m" << name << "\033[0m";
     else
         cout << "[" << name << "]: ";
 
@@ -51,6 +71,8 @@ void print_text(string text, string color, bool new_line)
         cout << "\033[1;33m" << text << "\033[0m";
     else if (color.compare("blue") == 0)
         cout << "\033[1;34m" << text << "\033[0m";
+    else if (color.compare("white") == 0)
+        cout << "\033[1;314m" << text << "\033[0m";
     else
         cout << text;
 
@@ -75,28 +97,25 @@ void concat_charA_to_str(string *str, char *char_array, unsigned int n)
     return;
 }
 
-void print(string s){
-    cout << "|"<< s << "|" << endl;
+bool command_compare(string message, string command){
+    if (message.size() < command.size())
+        return false;
+    for (int i = 0; i < command.size(); i++)
+        if (message[i] != command[i])
+            return false;
+    return true;        
+    
 }
 
-bool string_cmp_flag(string message, string flag){
-    if (flag.size() > message.size())
-        return false;
-    for (int i = 0; i < flag.size(); i++)
-        if (message[i] != flag[i])
-            return false;
-    return true;
+void print(string s){
+    cout << "|" << s << "|" <<endl;
 }
 
 int check_commands(string message)
 {
-    
-    if (string_cmp_flag(message,"/exit") || string_cmp_flag(message,"/quit"))
-    {
-        print("entrei aqui");
+    if (command_compare(message,"/exit") || command_compare(message,"/quit"))
         return 1;
-    }
-    else if (string_cmp_flag(message,"/ping"))
+    else if (command_compare(message,"/ping"))
         return 2;
 
     return 0;
@@ -122,6 +141,7 @@ int socket_init()
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
+
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(PORT);
@@ -153,7 +173,23 @@ int socket_init()
     return new_socket;
 }
 
-void receive_message(int new_socket)
+int get_id(char *message, int *request_id)
+{
+    string message_id;
+    int pos = 1;
+
+    while (message[pos] != '\0')
+    {
+        message_id.push_back(message[pos]);
+        pos++;
+    }
+
+    *request_id = stoi(message_id);
+
+    return pos;
+}
+
+void receive_message(int user_socket)
 {
     int valread;
     int instruction;
@@ -162,22 +198,69 @@ void receive_message(int new_socket)
 
     while (exec != 1)
     {
-        valread = recv(new_socket, &request, size_message + 1, 0);
-        cout << "valread : "<< valread << endl;
+        valread = recv(user_socket, &request, size_id + size_message + 1, 0);
         request[valread] = '\0';
-        while (request[0] == 'i')
+
+        if (request[0] == 'n')
         {
-            concat_charA_to_str(&message, &request[1], valread);
-            valread = recv(new_socket, &request, size_message + 1, 0);
-            request[valread] = '\0';
+            bool find = false;
+            concat_charA_to_str(&message, &request[1], valread - 1);
+            char response[size_nickname + 1];
+            response[0] = 'n';
+
+            for (it = users.begin(); it != users.end(); ++it)
+                if (message.compare(it->second.first) == 0)
+                {
+                    find = true;
+                    break;
+                }
+
+            if (!find)
+            {
+                user_id++;
+                it = users.begin();
+                pair<string, int> user = make_pair(message, user_socket);
+
+                sprintf(&response[1], "%d", user_id);
+                users.insert(it, pair<int, pair<string, int>>(user_id, user));
+                print_name(NAME, "green");
+                print_text(message, "green", false);
+                cout << " entrou no chat" << endl;
+            }
+
+            else
+                sprintf(&response[1], "%d", 0);
+
+            send(user_socket, &response, size_nickname + 1, 0);
         }
 
-        concat_charA_to_str(&message, &request[1], valread - 1);
-        print_name("Outro usuário", "red");
-        cout << message << endl;
-        if (message[0] == '/')
-            exec = check_commands(message);
+        else
+        {
+            int request_id = 0;
+            int id_lenght = 0;
+
+            while (request[0] == 'i')
+            {
+                id_lenght = get_id(request, &request_id);
+                concat_charA_to_str(&message, &request[1 + id_lenght], valread);
+                valread = recv(user_socket, &request, size_id + size_message + 1, 0);
+                request[valread] = '\0';
+            }
+
+            id_lenght = get_id(request, &request_id);
+            concat_charA_to_str(&message, &request[1 + id_lenght], valread - 1);
+
+            map<int, pair<string, int>>::iterator request_user = users.find(request_id);
+
+            print_name(request_user->second.first, "red");
+            cout << message << endl;
+
+            if (message[0] == '/')
+                exec = check_commands(message);
+        }
+
         message.clear();
+        memset(request, 0, size_id + size_message + 1);
     }
 
     return;
@@ -228,9 +311,10 @@ void send_message(int new_socket)
         {
             response[0] = 'c';
             print_name(NAME, "blue");
-            print_text(message, "yellow", true);
+            print_text(message, "white", true);
             send(new_socket, &response, tmp_message.length() + 1, 0);
         }
+
         message.clear();
         tmp_message.clear();
     }
