@@ -6,3 +6,5 @@ run_c:
 	./client.out
 run_s:
 	./server.out
+clear:
+	tput reset
