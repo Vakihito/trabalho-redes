@@ -53,7 +53,9 @@ void concat_charA_to_str(string *str, char *char_array, unsigned int n) {
 }
 
 int check_commands(string message) {
-    if(message.compare("/exit") == 0) return 1;
+    if (message.compare("/exit") == 0 || message.compare("/quit") == 0)
+        return 1;
+    
     else if(message.compare("/ping") == 0) return 2;
 
     return 0; 
@@ -137,8 +139,11 @@ void send_message(int new_socket) {
             if (check_commands(message) == 1) {
                 print_name("Outro usuário", "blue");
                 print_text("Encerrou o chat", "red", true);
+                response[0] = 'c';
+                str_to_charA(&response[1], message, size_message);
+                send(new_socket, &response, size_message + 1, 0);
                 exec = 1;
-                break;
+                stop = true;
             }
 
             response[0] = 'i';
