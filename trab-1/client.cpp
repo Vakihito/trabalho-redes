@@ -9,7 +9,7 @@
 
 #define NAME "Client"
 #define PORT 8080 
-#define size_message 8
+#define size_message 4096
 
 using namespace std;
 
