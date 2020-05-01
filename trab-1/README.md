@@ -11,3 +11,4 @@ Primeiramente precisamos ter o dois terminais
     </ul>
 
 Ubuntu 18.04.4 LTS (Bionic Beaver)
+gcc version 7.5.0
