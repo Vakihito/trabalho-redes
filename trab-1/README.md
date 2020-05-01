@@ -10,5 +10,5 @@ Primeiramente precisamos ter o dois terminais
         <li>No outro terminal use o seguinte comando <code> ./server.out </code></li>
     </ul>
 
-Ubuntu 18.04.4 LTS (Bionic Beaver)
+Ubuntu 18.04.4 LTS (Bionic Beaver)<br>
 gcc version 7.5.0
