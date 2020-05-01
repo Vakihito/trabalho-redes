@@ -301,10 +301,11 @@ void send_message(int new_socket)
 
         else if (exec == 2)
         {
-            message = "ping";
+            message = "pong";
             response[0] = 'i';
             str_to_charA(&response[1], message, size_message);
-            cout << message << '\n';
+            send(new_socket, &response, size_message + 1, 0);
+            exec = 0;
         }
 
         if (exec != 1)

@@ -143,11 +143,21 @@ int choose_nickname(int server_socket)
     return user_id;
 }
 
+bool command_compare(string message, string command)
+{
+    if (message.size() < command.size())
+        return false;
+    for (int i = 0; i < command.size(); i++)
+        if (message[i] != command[i])
+            return false;
+    return true;
+}
+
 int check_commands(string message)
 {
-    if (message.compare("/exit") == 0)
+    if (command_compare(message, "/exit") || command_compare(message, "/quit"))
         return 1;
-    else if (message.compare("/ping") == 0)
+    else if (command_compare(message, "/ping"))
         return 2;
 
     return 0;
