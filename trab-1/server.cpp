@@ -1,3 +1,14 @@
+/*--Observações--*/
+/*
+
+>> Para facilitar o processamento das mensagens, foram estabelecidos alguns códigos, os quais são
+inseridos no 1 byte do bloco da requisição/resposta, de modo a identificar a operação correspondente.  
+* 'i': outros blocos serão enviados para compor a mensagem final
+* 'c': bloco final da mensagem
+* 'e': encerra conexão do cliente com o servidor
+
+*/
+
 // Server side C/C++ program to demonstrate Socket programming 
 #include <iostream> 
 #include <string>
