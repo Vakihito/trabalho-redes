@@ -14,3 +14,7 @@ server_v :
 	$(server_command) valgrind ./server.out
 client_v :
 	$(client_command) valgrind ./client.out
+server2:
+	g++ server2.cpp -pthread -o server.out && ./server.out
+client2:
+	g++ client2.cpp -pthread -o client.out && ./client.out
