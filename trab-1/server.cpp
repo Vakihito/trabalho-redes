@@ -221,7 +221,6 @@ int main(int argc, char const *argv[]) {
     // while the command /quit is not receved keep up
     while(exec != 1) {
         exec = request(new_socket);
-        cout << "exec : " << exec << endl;
         response(new_socket,exec);
     }
 
