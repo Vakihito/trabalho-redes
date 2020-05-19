@@ -35,6 +35,9 @@ int user_id = 0;                          //variável para controle de criação
 map<int, pair<string, int>> users;        //estrutura para armazenamento das informações de cada usuário
 map<int, pair<string, int>>::iterator it; //iterador para busca dos usuários
 
+
+
+
 void print_name(string name, string color)
 {
     if (color.compare("red") == 0)
@@ -61,6 +64,7 @@ void print_name(string name, string color)
     return;
 }
 
+/* esta função serve para imprimir os textos coloridos */
 void print_text(string text, string color, bool new_line)
 {
     if (color.compare("red") == 0)
@@ -82,6 +86,10 @@ void print_text(string text, string color, bool new_line)
     return;
 }
 
+/* transforma string em char* */
+// char_arry - vetor de char pra onde passaremos a string
+// str - string que queremos copiar
+// n - aé onde quermos copiar
 void str_to_charA(char *char_array, string str, unsigned int n)
 {
     for (unsigned int i = 0; i < n && i < str.length(); i++)
@@ -89,6 +97,7 @@ void str_to_charA(char *char_array, string str, unsigned int n)
     return;
 }
 
+/* concatena o char_array na string str  */
 // char_array length must be smaller or equal to n
 void concat_charA_to_str(string *str, char *char_array, unsigned int n)
 {
@@ -97,6 +106,9 @@ void concat_charA_to_str(string *str, char *char_array, unsigned int n)
     return;
 }
 
+/* copara as duas strings message e command */
+// retorna true se as duas mensagens forem iguais
+// retorna false se as duas messagens forem diferentes.
 bool command_compare(string message, string command){
     if (message.size() < command.size())
         return false;
@@ -106,10 +118,15 @@ bool command_compare(string message, string command){
     return true;        
     
 }
+/* função de print */
 
 void print(string s){
     cout << "|" << s << "|" <<endl;
 }
+
+/* verifica a message e retorna uma flag */
+// caso a message for qualquer coisa diferente de um comando será retornado 0
+// caso contrário retornamos uma flag referente ao comando
 
 int check_commands(string message)
 {
@@ -120,6 +137,8 @@ int check_commands(string message)
 
     return 0;
 }
+
+/* inicializando a socket */
 
 int socket_init()
 {
@@ -173,6 +192,10 @@ int socket_init()
     return new_socket;
 }
 
+
+
+/* Recebe o id da message */
+
 int get_id(char *message, int *request_id)
 {
     string message_id;
@@ -189,18 +212,26 @@ int get_id(char *message, int *request_id)
     return pos;
 }
 
+/* recebendo diferentes mensagens, dada uma socket */
+
 void receive_message(int user_socket)
 {
     int valread;
     int instruction;
     string message;
     char request[size_message + 1];
+    string messageCommand; // retornar repostar ao cliente, após receber um comando
+    char response[size_message + 1]; // retornar repostar ao cliente, após receber um comando
 
+    // exec é uma flag que verificamos
+    // essa flag recebe o retorno dos comandos
     while (exec != 1)
     {
+        // recebendo a mensagem
         valread = recv(user_socket, &request, size_id + size_message + 1, 0);
         request[valread] = '\0';
 
+        // verificando se é uma mensagem relacionado a o usuário
         if (request[0] == 'n')
         {
             bool find = false;
@@ -255,13 +286,36 @@ void receive_message(int user_socket)
             print_name(request_user->second.first, "red");
             cout << message << endl;
 
-            if (message[0] == '/')
+            if (message[0] == '/'){
                 exec = check_commands(message);
+                if (exec == 1)
+                {
+                    messageCommand = "Encerrando conexão com o cliente...";
+                    print_name(NAME, "yellow");
+                    print_text(messageCommand, "yellow", true);
+                    response[0] = 'e';
+                    send(user_socket, &response, messageCommand.length() + 1, 0);
+                }
+                else if (exec == 2)
+                {
+                    messageCommand = "pong";
+                    response[0] = 'c';
+                    str_to_charA(&response[1], messageCommand, size_message);
+                    send(user_socket, &response, messageCommand.length() + 1, 0);
+                    exec = 0;
+                }
+            }
         }
 
         message.clear();
+        messageCommand.clear();
         memset(request, 0, size_id + size_message + 1);
+        memset(response, 0, size_id + size_message + 1);
     }
+
+    // exec é igual a um precisamos avisar o client que ele deve encerrar
+    // para tal enviamos uma menssagem
+
 
     return;
 }
@@ -271,7 +325,7 @@ void send_message(int new_socket)
     string message, tmp_message;
     char response[size_message + 1];
 
-    while (true)
+    while (exec != 1)
     {
         if (exec == 0)
         {
@@ -287,27 +341,6 @@ void send_message(int new_socket)
                 str_to_charA(&response[1], tmp_message, size_message);
             }
         }
-
-        else if (exec == 1)
-        {
-            message = "Encerrando conexão com o cliente...";
-            print_name(NAME, "yellow");
-            print_text(message, "yellow", true);
-
-            response[0] = 'e';
-            send(new_socket, &response, message.length() + 1, 0);
-            break;
-        }
-
-        else if (exec == 2)
-        {
-            message = "pong";
-            response[0] = 'i';
-            str_to_charA(&response[1], message, size_message);
-            send(new_socket, &response, size_message + 1, 0);
-            exec = 0;
-        }
-
         if (exec != 1)
         {
             response[0] = 'c';
@@ -330,11 +363,16 @@ int main(int argc, char const *argv[])
 
     thread receive_thread(receive_message, new_socket);
     thread response_thread(send_message, new_socket);
-
-    receive_thread.join();
-    response_thread.join();
+    try{
+        receive_thread.join();
+        response_thread.detach();
+        response_thread.join();
+    }
+    catch(...){
+        cout << "END" << endl;
+    }
+   
 
     close(new_socket);
-
     return 0;
 }

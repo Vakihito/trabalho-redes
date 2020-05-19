@@ -229,7 +229,6 @@ void receive_message(int new_socket)
         if (request[0] != 'n')
         {
             concat_charA_to_str(&message, &request[1], valread - 1);
-
             print_name("Outro usuário", "red");
             cout << message << '\n';
             message.clear();

@@ -1,9 +1,9 @@
-server_command = $(shell g++ server.cpp -pthread -o server.out)
-client_command = $(shell g++ client.cpp -pthread -o client.out)
+server_command = $(shell g++ server2.cpp -pthread -o server2.out)
+client_command = $(shell g++ client2.cpp -pthread -o client2.out)
 server:
-	$(server_command) ./server.out
+	$(server_command) ./server2.out
 client:
-	$(client_command) ./client.out
+	$(client_command) ./client2.out
 run_c:
 	./client.out
 run_s:
@@ -14,7 +14,3 @@ server_v :
 	$(server_command) valgrind ./server.out
 client_v :
 	$(client_command) valgrind ./client.out
-server2:
-	g++ server2.cpp -pthread -o server.out && ./server.out
-client2:
-	g++ client2.cpp -pthread -o client.out && ./client.out
