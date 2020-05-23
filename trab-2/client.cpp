@@ -50,10 +50,8 @@ char *str_to_charA(string str, int n) {
 
 int check_command(string command) {
     if(command.compare(0,8,"/connect") == 0) return 1;
-    else if(command.compare(0,5,"/quit") == 0) return 2;
-
-    print_name("System","red");
-    cout << "Invalid syntax" << endl;
+    if (command.compare(0, 5, "/quit") == 0 || command.compare(0, 5, "/exit") == 0) return 2;
+    if (command.compare(0, 5, "/ping") == 0) return 3;
 
     return 0;
 }
@@ -67,8 +65,13 @@ int socket_init() {
     do {
         print_name("User","yellow");
         cin >> command;
+        
         op_code = check_command(command);
-    } while(op_code == 0);
+        if (op_code != 1){
+            print_name("System", "red");
+            cout << "Invalid syntax" << endl;
+        }
+    } while(op_code != 1);
 
     if(op_code == 2) return QUIT;
 
@@ -130,15 +133,16 @@ int main(int argc, char const *argv[]) {
         cout << "Closing application..." << endl;
         return 0;
     }
-
-    while(true) {
+    int flag_command = 0;
+    while(flag_command != 2) {
         cin >> message;
         char *tmp_message = str_to_charA(message, message.length());
         send(sock, tmp_message, message.length(), 0 );
         free(tmp_message);
         char *tmp_buffer = str_to_charA(buffer, 1024);
-        valread = read( sock, tmp_buffer, 1024); 
-        cout << buffer << '\n';
+        valread = read( sock, tmp_buffer, 1024);
+        string tmp_buffer_s(tmp_buffer);
+        flag_command = check_command(tmp_buffer_s);
         free(tmp_buffer);
     }
 
