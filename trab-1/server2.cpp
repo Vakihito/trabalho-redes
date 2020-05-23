@@ -325,7 +325,7 @@ void send_message(int new_socket)
     string message, tmp_message;
     char response[size_message + 1];
 
-    while (exec != 1)
+    while (true)
     {
         if (exec == 0)
         {
@@ -363,14 +363,8 @@ int main(int argc, char const *argv[])
 
     thread receive_thread(receive_message, new_socket);
     thread response_thread(send_message, new_socket);
-    try{
-        receive_thread.join();
-        response_thread.detach();
-        response_thread.join();
-    }
-    catch(...){
-        cout << "END" << endl;
-    }
+    receive_thread.join();
+    response_thread.join();
    
 
     close(new_socket);

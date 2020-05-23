@@ -187,9 +187,11 @@ int main(int argc, char *argv[]) {
                     //set the string terminating NULL byte on the end  
                     //of the data read  
                     tmp_buffer[valread] = '\0';
+                    print_name("Client " + to_string(i), "red");
+                    cout << tmp_buffer << endl;
                     send(sd, tmp_buffer, valread, 0 );
                 }
-            }
+            } 
         }
     }
 
