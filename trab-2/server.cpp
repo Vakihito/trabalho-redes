@@ -1,19 +1,48 @@
-//Example code: A simple server side code, which echos back the received message. 
-//Handle multiple socket connections with select and fd_set on Linux  
 #include <iostream>
-#include <string>//strlen  
+#include <string>       
 #include <stdlib.h>  
 #include <errno.h>  
-#include <unistd.h>//close  
-#include <arpa/inet.h> //close  
+#include <unistd.h>       
+#include <arpa/inet.h>  
 #include <sys/types.h>  
 #include <sys/socket.h>  
 #include <netinet/in.h>  
-#include <sys/time.h> //FD_SET, FD_ISSET, FD_ZERO macros  
+#include <sys/time.h>     
 
-#define PORT 8888  
+#define PORT 8888        //número da porta de comunicação
+#define NAME "Server"    //nome do servidor
 
 using namespace std;
+
+void print_name(string name, string color) {
+    if (color.compare("red") == 0)
+        cout << "\033[1;31m" << "[" << name << "]: " << "\033[0m";
+    else if (color.compare("green") == 0)
+        cout << "\033[1;32m" << "[" << name << "]: " << "\033[0m";
+    else if (color.compare("yellow") == 0)
+        cout << "\033[1;33m" << "[" << name << "]: " << "\033[0m";
+    else if (color.compare("blue") == 0)
+        cout << "\033[1;34m" << "[" << name << "]: " << "\033[0m";
+    else if (color.compare("white") == 0)
+        cout << "\033[1;314m" << name << "\033[0m";
+    else
+        cout << "[" << name << "]: ";
+
+    return;
+}
+
+void print_text(string text, string color, bool new_line) {
+    if (color.compare("red") == 0) cout << "\033[1;31m" << text << "\033[0m";
+    else if (color.compare("green") == 0) cout << "\033[1;32m" << text << "\033[0m";
+    else if (color.compare("yellow") == 0) cout << "\033[1;33m" << text << "\033[0m";
+    else if (color.compare("blue") == 0) cout << "\033[1;34m" << text << "\033[0m";
+    else if (color.compare("white") == 0) cout << "\033[1;314m" << text << "\033[0m";
+    else cout << text;
+
+    if (new_line) cout << endl;
+
+    return;
+}
 
 char *str_to_charA(string str, int n) {
     char *char_array = new char[n];
@@ -64,6 +93,8 @@ int main(int argc, char *argv[]) {
         perror("bind failed");
         exit(EXIT_FAILURE);
     }
+
+    print_name(NAME,"blue");
     cout << "Listener on port " << PORT << '\n';
 
     //try to specify maximum of 3 pending connections for the master socket  
@@ -74,6 +105,7 @@ int main(int argc, char *argv[]) {
 
     //accept the incoming connection
     addrlen = sizeof(address);
+    print_name(NAME,"blue");
     cout << "Waiting for connections ...\n";
 
     while(true) {
@@ -85,17 +117,10 @@ int main(int argc, char *argv[]) {
         max_sd = master_socket;
 
         //add child sockets to set  
-        for ( i = 0 ; i < max_clients ; i++) {
-            //socket descriptor  
-            sd = client_socket[i];
-
-        //if valid socket descriptor then add to read list  
-        if(sd > 0)
-            FD_SET( sd, &readfds);
-
-        //highest file descriptor number, need it for the select function  
-        if(sd > max_sd)
-            max_sd = sd;
+        for ( i = 0 ; i < max_clients ; i++) { 
+            sd = client_socket[i];              //socket descriptor 
+            if(sd > 0) FD_SET( sd, &readfds);   //if valid socket descriptor then add to read list  
+            if(sd > max_sd) max_sd = sd;        //highest file descriptor number, need it for the select function  
         }
 
         //wait for an activity on one of the sockets, timeout is NULL,
@@ -113,7 +138,8 @@ int main(int argc, char *argv[]) {
                 exit(EXIT_FAILURE);
             }
 
-            //inform user of socket number - used in send and receive commands  
+            //inform user of socket number - used in send and receive commands 
+            print_name(NAME,"green"); 
             cout << "New connection, socket fd is " << new_socket << ", ip is : " << inet_ntoa(address.sin_addr) << ", port : " << ntohs(address.sin_port) << '\n';
 
             char *tmp_message = str_to_charA(message, message.length());
@@ -122,7 +148,8 @@ int main(int argc, char *argv[]) {
                 perror("send");
 
             free(tmp_message);
-
+            
+            print_name(NAME,"blue");
             cout << "Welcome message sent successfully\n";
 
             //add new socket to array of sockets  
@@ -130,6 +157,7 @@ int main(int argc, char *argv[]) {
                 //if position is empty  
                 if( client_socket[i] == 0 ) {
                     client_socket[i] = new_socket;
+                    print_name(NAME,"blue");
                     cout << "Adding to list of sockets as " << i << '\n';
                     break;
                 }

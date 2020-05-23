@@ -1,13 +1,43 @@
-// Client side C/C++ program to demonstrate Socket programming  
 #include <iostream>
 #include <sys/socket.h> 
 #include <arpa/inet.h> 
 #include <unistd.h> 
 #include <errno.h>  
 #include <string> 
+
 #define PORT 8888 
 
 using namespace std;
+
+void print_name(string name, string color) {
+    if (color.compare("red") == 0)
+        cout << "\033[1;31m" << "[" << name << "]: " << "\033[0m";
+    else if (color.compare("green") == 0)
+        cout << "\033[1;32m" << "[" << name << "]: " << "\033[0m";
+    else if (color.compare("yellow") == 0)
+        cout << "\033[1;33m" << "[" << name << "]: " << "\033[0m";
+    else if (color.compare("blue") == 0)
+        cout << "\033[1;34m" << "[" << name << "]: " << "\033[0m";
+    else if (color.compare("white") == 0)
+        cout << "\033[1;314m" << name << "\033[0m";
+    else
+        cout << "[" << name << "]: ";
+
+    return;
+}
+
+void print_text(string text, string color, bool new_line) {
+    if (color.compare("red") == 0) cout << "\033[1;31m" << text << "\033[0m";
+    else if (color.compare("green") == 0) cout << "\033[1;32m" << text << "\033[0m";
+    else if (color.compare("yellow") == 0) cout << "\033[1;33m" << text << "\033[0m";
+    else if (color.compare("blue") == 0) cout << "\033[1;34m" << text << "\033[0m";
+    else if (color.compare("white") == 0) cout << "\033[1;314m" << text << "\033[0m";
+    else cout << text;
+
+    if (new_line) cout << endl;
+
+    return;
+}
 
 char *str_to_charA(string str, int n) {
     char *char_array = new char[n];
