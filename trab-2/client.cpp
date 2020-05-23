@@ -6,6 +6,7 @@
 #include <string> 
 
 #define PORT 8888 
+#define QUIT -9999
 
 using namespace std;
 
@@ -46,29 +47,88 @@ char *str_to_charA(string str, int n) {
     char_array[n < str.length() ? n : str.length()] = '\0';
     return char_array;
 }
-   
-int main(int argc, char const *argv[]) { 
-    int sock = 0, valread; 
-    struct sockaddr_in serv_addr; 
-    string message; 
-    string buffer; 
-    if ((sock = socket(AF_INET, SOCK_STREAM, 0)) < 0)  { 
-        perror("Socket creation error\n");
-        return -1; 
-    } 
-   
+
+int check_command(string command) {
+    if(command.compare(0,8,"/connect") == 0) return 1;
+    else if(command.compare(0,5,"/quit") == 0) return 2;
+
+    print_name("System","red");
+    cout << "Invalid syntax" << endl;
+
+    return 0;
+}
+
+int socket_init() {
+    int server_socket = 0;
+    struct sockaddr_in serv_addr;
+    string command;
+    int op_code = 0;
+
+    do {
+        print_name("User","yellow");
+        cin >> command;
+        op_code = check_command(command);
+    } while(op_code == 0);
+
+    if(op_code == 2) return QUIT;
+
+    print_name("System","yellow");
+    cout << "Setting connection..." << endl;
+
+    if((server_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+        cout << "Socket creation error" << endl;
+        return -1;
+    }
+
     serv_addr.sin_family = AF_INET; 
     serv_addr.sin_port = htons(PORT); 
-       
-    // Convert IPv4 and IPv6 addresses from text to binary form 
+
+    // converte endereços IPv4 e IPv6 addresses de texto para o formato binário 
     if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) { 
         perror("Invalid or unsupported address\n");
         return -1; 
     } 
+
+    // aguarda conexão com o servidor
+     while(connect(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        print_name("System", "yellow");
+        cout << "Connecting...\n";
+        sleep(3);
+    }
+
+    print_name("System","green");
+    cout << "Server connection stablished" << endl;
+
+    return server_socket;   
+}
+
+void send_message(int server_socket) {
+
+    return;   
+}
+
+void receive_message(int server_socket) {
+
+    return;
+}
    
-    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0){ 
-        perror("Connection Failed\n");
-        return -1; 
+int main(int argc, char const *argv[]) { 
+    int sock = 0;
+    int valread; 
+    struct sockaddr_in serv_addr; 
+    string message; 
+    string buffer; 
+
+    // move o cursor para o fim da tela
+    cout << "\033[9999;1H";
+
+    // estabelece conexão com o servidor
+    sock = socket_init();
+
+    if(sock == QUIT) {
+        print_name("System","yellow");
+        cout << "Closing application..." << endl;
+        return 0;
     }
 
     while(true) {
@@ -81,5 +141,6 @@ int main(int argc, char const *argv[]) {
         cout << buffer << '\n';
         free(tmp_buffer);
     }
+
     return 0; 
 } 

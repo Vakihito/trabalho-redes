@@ -175,6 +175,7 @@ int main(int argc, char *argv[]) {
                 if ((valread = read( sd, tmp_buffer, 1024)) == 0) {
                     //Somebody disconnected, get his details and print  
                     getpeername(sd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
+                    print_name(NAME,"red");
                     cout << "Host disconnected, ip " << inet_ntoa(address.sin_addr) << ", port " << ntohs(address.sin_port) << '\n';
 
                     //Close the socket and mark as 0 in list for reuse  
