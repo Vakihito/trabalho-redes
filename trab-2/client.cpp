@@ -134,8 +134,10 @@ int main(int argc, char const *argv[]) {
         return 0;
     }
     int flag_command = 0;
+    getchar();
     while(flag_command != 2) {
-        cin >> message;
+        getline(cin, message);
+
         char *tmp_message = str_to_charA(message, message.length());
         send(sock, tmp_message, message.length(), 0 );
         free(tmp_message);
