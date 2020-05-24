@@ -144,6 +144,8 @@ int main(int argc, char const *argv[]) {
         char *tmp_buffer = str_to_charA(buffer, 1024);
         valread = read( sock, tmp_buffer, 1024);
         string tmp_buffer_s(tmp_buffer);
+        print_name("Server", "green");
+        cout << tmp_buffer_s << endl;
         flag_command = check_command(tmp_buffer_s);
         free(tmp_buffer);
     }
