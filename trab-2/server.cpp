@@ -56,6 +56,13 @@ char *str_to_charA(string str, int n) {
     return char_array;
 }
 
+char *add_char_to_start(char *strAux, int n, int idx){
+    string str(strAux);
+    str = to_string (idx) + str;
+    return str_to_charA(str, n);
+}
+
+
 int main(int argc, char *argv[]) {
     int opt = true;
     int master_socket, addrlen, new_socket, client_socket[30], max_clients = 30, activity, i, valread, sd;
@@ -179,7 +186,9 @@ int main(int argc, char *argv[]) {
             sd = client_socket[i];
 
             if(FD_ISSET( sd, &readfds)) {
-                //Check if it was for closing, and also read the incoming message 
+                //Check if it was for closing, and also read the incoming message
+                // colocando o primeiro caracter para identificar de que cliente veio
+                // a mensagem 
                 char *tmp_buffer = str_to_charA(buffer, 1024);
                 if((valread = read( sd, tmp_buffer, 1024)) == 0) {
                     //Somebody disconnected, get his details and print  
@@ -196,6 +205,7 @@ int main(int argc, char *argv[]) {
                 else {
                     //set the string terminating NULL byte on the end of the data read  
                     tmp_buffer[valread] = '\0';
+                    tmp_buffer = add_char_to_start(tmp_buffer, 1024, i);
                     print_name("Client " + to_string(i), "blue");
                     cout << tmp_buffer << endl;
                     for (int i = 0; i < max_clients; i++)
