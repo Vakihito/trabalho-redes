@@ -5,6 +5,9 @@
 #include <errno.h>  
 #include <string.h> 
 #include <thread>
+#include <termios.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #define PORT 8888 
 #define QUIT -9999
@@ -16,6 +19,7 @@ using namespace std;
 
 int token = 0;      // código identificador do usuário na aplicação
 string nickname;    // nome do usuário no servidor
+int flag_command = 0; // numero do comando recebedi / enviado
 
 void print_name(string name, string color) {
     if (color.compare("red") == 0)
@@ -45,6 +49,33 @@ void print_text(string text, string color, bool new_line) {
     if (new_line) cout << endl;
 
     return;
+}
+
+int kbhit(void)
+{
+    struct termios oldt, newt;
+    int ch;
+    int oldf;
+
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    oldf = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, oldf | O_NONBLOCK);
+
+    ch = getchar();
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, oldf);
+
+    if (ch != EOF)
+    {
+        ungetc(ch, stdin);
+        return 1;
+    }
+
+    return 0;
 }
 
 void concat_charA_to_str(string *str, char *char_array, unsigned int n) {
@@ -132,42 +163,37 @@ int socket_init() {
 }
 
 void send_message(int server_socket) {
-    string message, tmp_message;               //mensagem do usuário
+    string message;               //mensagem do usuário
     char response[size_id + size_message + 1]; //bloco de dados enviado ao servidor
     int id_lenght;                             //número de caracteres ocupados pelo id do cliente (incluindo o '\0')
 
+    while (flag_command != 2)
+    {
+        getline(cin, message);
+        flag_command = check_command(message);
+        char *tmp_message = str_to_charA(message, message.length());
+        send(server_socket, tmp_message, message.length(), 0);
+        free(tmp_message);
+    }
     return;   
 }
 
 void receive_message(int server_socket) {
     int valread;
-    string message;
+    string message, buffer;
     char received[size_message + 1];
 
-    while(true) {
-        valread = recv(server_socket, &received, size_message + 1, 0);
-
-        if(received[0] == 'e') {
-            print_name("Outro usuário", "blue");
-            print_text("Encerrou o chat", "red", true);
-            exit(0);
-            break;
-        }
-
-        received[valread] = '\0';
-        while (received[0] == 'i') {
-            concat_charA_to_str(&message, &received[1], valread);
-            valread = recv(server_socket, &received, size_message + 1, 0);
-            received[valread] = '\0';
-        }
-
-        if(received[0] != 'n') {
-            concat_charA_to_str(&message, &received[1], valread - 1);
-            print_name("Outro usuário", "red");
-            cout << message << '\n';
-            message.clear();
-        }   
+    while (flag_command != 2)
+    {
+        char *tmp_buffer = str_to_charA(buffer, 1024);
+        valread = read(server_socket, tmp_buffer, 1024);
+        string tmp_buffer_s(tmp_buffer);
+        print_name("Server", "green");
+        cout << tmp_buffer_s << endl;
+        free(tmp_buffer);
     }
+    
+    
 
     return;
 }
@@ -191,7 +217,7 @@ int main(int argc, char const *argv[]) {
         return 0;
     }
 
-    int flag_command = 0;
+    
 
     getchar();
 
@@ -203,20 +229,11 @@ int main(int argc, char const *argv[]) {
 
     // close(sock);
 
-    while(flag_command != 2) { 
-        print_name(nickname,"blue");       
-        getline(cin, message);
-        char *tmp_message = str_to_charA(message, message.length());
-        send(sock, tmp_message, message.length(), 0 );
-        free(tmp_message);
-        char *tmp_buffer = str_to_charA(buffer, 1024);
-        valread = read( sock, tmp_buffer, 1024);
-        string tmp_buffer_s(tmp_buffer);
-        print_name("Server", "green");
-        cout << tmp_buffer_s << endl;
-        flag_command = check_command(tmp_buffer_s);
-        free(tmp_buffer);
-    }
+    thread receive_thread(receive_message, sock);
+    thread response_thread(send_message, sock);
+
+    response_thread.join();
+    receive_thread.join();
 
     return 0; 
 } 

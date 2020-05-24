@@ -198,9 +198,6 @@ int main(int argc, char *argv[]) {
                     tmp_buffer[valread] = '\0';
                     print_name("Client " + to_string(i), "blue");
                     cout << tmp_buffer << endl;
-                    cout << "sd : " <<  sd << endl;
-                    cout << "max_clients : " << max_clients << endl;
-                    cout << "client_socket[i]:" << client_socket[i] << endl;
                     for (int i = 0; i < max_clients; i++)
                         send(client_socket[i], tmp_buffer, valread, 0);
                 }
