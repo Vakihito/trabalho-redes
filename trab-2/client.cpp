@@ -14,7 +14,7 @@
 
 using namespace std;
 
-int id = 0;         // código identificador do usuário na aplicação
+int token = 0;      // código identificador do usuário na aplicação
 string nickname;    // nome do usuário no servidor
 
 void print_name(string name, string color) {
@@ -126,6 +126,7 @@ int socket_init() {
     concat_charA_to_str(&tmp_message, received, valread);
     // define o apelido inicial do usuário
     nickname = "User #" + tmp_message;
+    token = stoi(tmp_message);
 
     return server_socket;   
 }

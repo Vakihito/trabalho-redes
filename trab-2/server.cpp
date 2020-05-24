@@ -15,7 +15,6 @@
 
 using namespace std;
 
-int user_count = 0;                         // contador para atribuição de nome inicial de usuário
 map<int, pair<string, int>> users;          // estrutura para armazenamento das informações de cada usuário
 map<int, pair<string, int>>::iterator it;   // iterador para busca dos usuários
 
@@ -143,27 +142,20 @@ int main(int argc, char *argv[]) {
             print_name(NAME,"green"); 
             cout << "New connection, socket fd is " << new_socket << ", ip is : " << inet_ntoa(address.sin_addr) << ", port : " << ntohs(address.sin_port) << '\n';
 
-            int id = rand() % 596947;
+            int token = rand() % 596947;
 
-            while(users.find(id) != users.end()) {
-                id = rand() % 596947;
+            while(users.find(token) != users.end()) {
+                token = rand() % 596947;
             }
 
             //armazenando informções do novo usuário
-            pair<string, int> user = make_pair("User #" + to_string(user_count), new_socket);
-            users.insert(make_pair(id,user));
+            pair<string, int> user = make_pair("User #" + to_string(token), new_socket);
+            users.insert(make_pair(token,user));
 
-            //envia contador ao usuário para definir seu nome inicial
-            string message = to_string(user_count);
+            //envia token de autenticação ao usuário
+            string message = to_string(token);
             char *tmp_message = str_to_charA(message, message.length());
             if(send(new_socket, tmp_message, message.length(), 0) != message.length()) perror("send");
-
-            //envia id do usuário para identificação dentro do sistema
-            message = to_string(id);
-            tmp_message = str_to_charA(message, message.length());
-            if(send(new_socket, tmp_message, message.length(), 0) != message.length()) perror("send");
-
-            user_count++;
 
             free(tmp_message);
             
