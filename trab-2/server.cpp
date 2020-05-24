@@ -206,10 +206,12 @@ int main(int argc, char *argv[]) {
                     //set the string terminating NULL byte on the end of the data read  
                     tmp_buffer[valread] = '\0';
                     tmp_buffer = add_char_to_start(tmp_buffer, 1024, i);
+                    tmp_buffer[valread + 1] = '\0';
                     print_name("Client " + to_string(i), "blue");
-                    cout << tmp_buffer << endl;
+                    cout << &tmp_buffer[1] << endl;
                     for (int i = 0; i < max_clients; i++)
-                        send(client_socket[i], tmp_buffer, valread, 0);
+                        send(client_socket[i], tmp_buffer, valread + 2, 0);
+                    free(tmp_buffer);
                 }
             } 
         }

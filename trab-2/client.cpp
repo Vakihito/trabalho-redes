@@ -187,9 +187,10 @@ void receive_message(int server_socket) {
     {
         char *tmp_buffer = str_to_charA(buffer, 1024);
         valread = read(server_socket, tmp_buffer, 1024);
-        string tmp_buffer_s(tmp_buffer);
-        print_name("Server", "green");
-        cout << tmp_buffer_s << endl;
+        string client_id = "Client ";
+        client_id.push_back(tmp_buffer[0]);
+        print_name(client_id, "green");
+        cout << &tmp_buffer[1] << endl;
         free(tmp_buffer);
     }
     
