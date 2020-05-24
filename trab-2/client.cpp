@@ -235,5 +235,6 @@ int main(int argc, char const *argv[]) {
     response_thread.join();
     receive_thread.join();
 
+    close(sock);
     return 0; 
 } 
