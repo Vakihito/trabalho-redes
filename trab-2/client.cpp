@@ -101,6 +101,25 @@ int check_command(string command) {
     return 0;
 }
 
+/* para enviar o token do usuario pela mensagem precisamos de um tamanho padrao */
+/* esta funcao comoleta com zeros caso seja menor que o tamanho esperado */
+/* ex : se token = 32, precisa colocar 000032 */   
+string fill_nickname(){
+    string stoken_s = to_string(token);
+    string MaxToken = "596947";
+    while (stoken_s.length() < MaxToken.length())
+        stoken_s = "0" + stoken_s;
+    return stoken_s;
+}
+
+/* adiciona ao inicio da string o token do usuário */ 
+char *add_char_to_start(char *strAux, int n)
+{
+    string str(strAux);
+    str = fill_nickname() + str;
+    return str_to_charA(str, n);
+}
+
 int socket_init() {
     int server_socket = 0;
     struct sockaddr_in serv_addr;
@@ -172,7 +191,8 @@ void send_message(int server_socket) {
         getline(cin, message);
         flag_command = check_command(message);
         char *tmp_message = str_to_charA(message, message.length());
-        send(server_socket, tmp_message, message.length(), 0);
+        tmp_message = add_char_to_start(tmp_message, message.length() + 7);
+        send(server_socket, tmp_message, message.length() + 7, 0);
         free(tmp_message);
     }
     return;   
@@ -187,10 +207,9 @@ void receive_message(int server_socket) {
     {
         char *tmp_buffer = str_to_charA(buffer, 1024);
         valread = read(server_socket, tmp_buffer, 1024);
-        string client_id = "Client ";
-        client_id.push_back(tmp_buffer[0]);
-        print_name(client_id, "green");
-        cout << &tmp_buffer[1] << endl;
+        string clientToken (tmp_buffer, 6);
+        print_name("Client #" + clientToken, "green");
+        cout << &tmp_buffer[6] << endl;
         free(tmp_buffer);
     }
     

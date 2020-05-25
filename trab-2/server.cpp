@@ -56,13 +56,6 @@ char *str_to_charA(string str, int n) {
     return char_array;
 }
 
-char *add_char_to_start(char *strAux, int n, int idx){
-    string str(strAux);
-    str = to_string (idx) + str;
-    return str_to_charA(str, n);
-}
-
-
 int main(int argc, char *argv[]) {
     int opt = true;
     int master_socket, addrlen, new_socket, client_socket[30], max_clients = 30, activity, i, valread, sd;
@@ -205,12 +198,11 @@ int main(int argc, char *argv[]) {
                 else {
                     //set the string terminating NULL byte on the end of the data read  
                     tmp_buffer[valread] = '\0';
-                    tmp_buffer = add_char_to_start(tmp_buffer, 1024, i);
-                    tmp_buffer[valread + 1] = '\0';
-                    print_name("Client " + to_string(i), "blue");
-                    cout << &tmp_buffer[1] << endl;
+                    string tokenClient (tmp_buffer, 6);
+                    print_name("Client #" + tokenClient, "green");
+                    cout << &tmp_buffer[6] << endl;
                     for (int j = 0; j < max_clients; j++)
-                        send(client_socket[j], tmp_buffer, valread + 2, 0);
+                        send(client_socket[j], tmp_buffer, valread, 0);
                     free(tmp_buffer);
                 }
             } 
