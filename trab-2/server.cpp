@@ -209,8 +209,8 @@ int main(int argc, char *argv[]) {
                     tmp_buffer[valread + 1] = '\0';
                     print_name("Client " + to_string(i), "blue");
                     cout << &tmp_buffer[1] << endl;
-                    for (int i = 0; i < max_clients; i++)
-                        send(client_socket[i], tmp_buffer, valread + 2, 0);
+                    for (int j = 0; j < max_clients; j++)
+                        send(client_socket[j], tmp_buffer, valread + 2, 0);
                     free(tmp_buffer);
                 }
             } 
