@@ -11,15 +11,21 @@
 
 #define PORT 8888 
 #define QUIT -9999
-#define size_nickname 50
-#define size_message 20
-#define size_id 11
+#define size_nickname 20
+#define size_message 10
+#define size_id 6
+
+//códigos presentes na requisição para identificar o tipo de operação solicitada
+#define FLAG_EXIT 'e'           //término de conexão com o servidor
+#define FLAG_INCOMPLETE 'i'     //mensagem incompleta
+#define FLAG_COMPLETE 'c'       //mensagem completa
+#define FLAG_PING 'p'           //instrução "ping-pong"
 
 using namespace std;
 
-int token = 0;      // código identificador do usuário na aplicação
-string nickname;    // nome do usuário no servidor
-int flag_command = 0; // numero do comando recebedi / enviado
+int token = 0;         // código identificador do usuário na aplicação
+string nickname;       // nome do usuário no servidor
+int flag_command = 0;  // numero do comando recebedi / enviado
 
 void print_name(string name, string color) {
     if (color.compare("red") == 0)
@@ -31,7 +37,7 @@ void print_name(string name, string color) {
     else if (color.compare("blue") == 0)
         cout << "\033[1;34m" << "[" << name << "]: " << "\033[0m";
     else if (color.compare("white") == 0)
-        cout << "\033[1;314m" << name << "\033[0m";
+        cout << "\033[1;314m" << "[" << name << "]: " << "\033[0m";
     else
         cout << "[" << name << "]: ";
 
@@ -51,8 +57,7 @@ void print_text(string text, string color, bool new_line) {
     return;
 }
 
-int kbhit(void)
-{
+int kbhit(void) {
     struct termios oldt, newt;
     int ch;
     int oldf;
@@ -69,8 +74,7 @@ int kbhit(void)
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
     fcntl(STDIN_FILENO, F_SETFL, oldf);
 
-    if (ch != EOF)
-    {
+    if (ch != EOF) {
         ungetc(ch, stdin);
         return 1;
     }
@@ -101,23 +105,20 @@ int check_command(string command) {
     return 0;
 }
 
-/* para enviar o token do usuario pela mensagem precisamos de um tamanho padrao */
-/* esta funcao comoleta com zeros caso seja menor que o tamanho esperado */
+/* Para enviar o token do usuário pela mensagem precisamos de um tamanho padrão */
+/* esta função completa com zeros caso seja menor que o tamanho esperado */
 /* ex : se token = 32, precisa colocar 000032 */   
-string fill_nickname(){
+string fill_nickname() {
     string stoken_s = to_string(token);
-    string MaxToken = "596947";
-    while (stoken_s.length() < MaxToken.length())
+    while (stoken_s.length() < size_id)
         stoken_s = "0" + stoken_s;
     return stoken_s;
 }
 
-/* adiciona ao inicio da string o token do usuário */ 
-char *add_char_to_start(char *strAux, int n)
-{
-    string str(strAux);
-    str = fill_nickname() + str;
-    return str_to_charA(str, n);
+void stoca(char *char_array, string str, unsigned int n) {
+    for (unsigned int i = 0; i < n && i < str.length(); i++)
+        char_array[i] = str[i];
+    return;
 }
 
 int socket_init() {
@@ -182,19 +183,54 @@ int socket_init() {
 }
 
 void send_message(int server_socket) {
-    string message;               //mensagem do usuário
-    char response[size_id + size_message + 1]; //bloco de dados enviado ao servidor
+    string message;                            //mensagem do usuário
     int id_lenght;                             //número de caracteres ocupados pelo id do cliente (incluindo o '\0')
+    string op_code;                            //char correspondente à útlima requisição do cliente
 
-    while (flag_command != 2)
-    {
-        getline(cin, message);
-        flag_command = check_command(message);
-        char *tmp_message = str_to_charA(message, message.length());
-        tmp_message = add_char_to_start(tmp_message, message.length() + 7);
-        send(server_socket, tmp_message, message.length() + 7, 0);
-        free(tmp_message);
+    while (flag_command != 2) {
+        char *request;
+        string str_request;
+        string tmp_message;
+
+        getline(cin, message);                  //recebe a entrada do usuário
+        flag_command = check_command(message);  //avalia se a mensagem corresponde a algum comando da aplicação
+        str_request = to_string(token);         //insere o token na requisição
+
+        // envio de mensagem comum
+        if(flag_command == 0) {
+            op_code = FLAG_INCOMPLETE;
+            tmp_message = message;
+            str_request = str_request + op_code + tmp_message;
+            request = str_to_charA(str_request, str_request.length());
+
+            while(tmp_message.length() > size_message) {
+                send(server_socket, &request, size_message + size_id + 1, 0);
+                tmp_message = tmp_message.substr(size_message);
+                str_request = str_request.substr(0,size_id + 1) + tmp_message;
+                cout << str_request << endl;
+                request = str_to_charA(str_request,str_request.length());
+            }
+
+            request[size_id] = FLAG_COMPLETE;
+            send(server_socket, request, size_message + size_id + 1, 0);
+        }
+
+        else {
+            if(flag_command == 2) op_code = FLAG_EXIT;        // envio de desconexão com o servidor
+            else if(flag_command == 3) op_code = FLAG_PING;   // envio do comando "/ping"
+                                                      
+            str_request = str_request + op_code;                       //insere o código da operação e a mensagem          
+            request = str_to_charA(str_request,str_request.length());  //converte o formato para vetor de caracteres
+            send(server_socket, request, size_id + 1, 0);              //envia a requisição ao servidor
+        }
+
+        memset(request, 0, size_id + tmp_message.length() + 1);
+        message.clear();
+        tmp_message.clear();
+
+        free(request);
     }
+
     return;   
 }
 
@@ -203,17 +239,14 @@ void receive_message(int server_socket) {
     string message, buffer;
     char received[size_message + 1];
 
-    while (flag_command != 2)
-    {
+    while (flag_command != 2) {
         char *tmp_buffer = str_to_charA(buffer, 1024);
         valread = read(server_socket, tmp_buffer, 1024);
         string clientToken (tmp_buffer, 6);
-        print_name("Client #" + clientToken, "green");
+        print_name(nickname, "green");
         cout << &tmp_buffer[6] << endl;
         free(tmp_buffer);
     }
-    
-    
 
     return;
 }
@@ -237,17 +270,7 @@ int main(int argc, char const *argv[]) {
         return 0;
     }
 
-    
-
     getchar();
-
-    // thread receive_thread(receive_message, sock);
-    // thread response_thread(send_message, sock);
-
-    // receive_thread.join();
-    // response_thread.join();
-
-    // close(sock);
 
     thread receive_thread(receive_message, sock);
     thread response_thread(send_message, sock);
