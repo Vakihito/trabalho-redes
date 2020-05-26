@@ -234,14 +234,10 @@ int main(int argc, char *argv[]) {
                     //mensagem comum
                     if(op_code == FLAG_INCOMPLETE || op_code == FLAG_COMPLETE) {
                         string text;    
-                        while(op_code == FLAG_INCOMPLETE) 
-                            text = text + buffer.substr(size_token + 1);
-                        cout << text << endl;
-                        
-                        //imprime a mensagem recebida
+                        if(op_code == FLAG_INCOMPLETE) text = text + buffer.substr(size_token + 1);
+                        else for (int j = 0; j < max_clients; j++) send(client_socket[j], tmp_buffer, valread, 0); 
+                        //imprime mensagem
                         cout << &tmp_buffer[size_token + 1] << endl;
-                        for (int j = 0; j < max_clients; j++)
-                            send(client_socket[j], tmp_buffer, valread, 0); 
                     }
                     //alguém se desconectou
                     else if(op_code == FLAG_EXIT) {

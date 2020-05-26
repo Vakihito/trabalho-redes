@@ -201,18 +201,17 @@ void send_message(int server_socket) {
             op_code = FLAG_INCOMPLETE;
             tmp_message = message;
             str_request = str_request + op_code + tmp_message;
-            request = str_to_charA(str_request, str_request.length());
+            request = str_to_charA(str_request, size_message + size_id + 1);
 
             while(tmp_message.length() > size_message) {
-                send(server_socket, &request, size_message + size_id + 1, 0);
+                send(server_socket, &request, size_id + size_message + 1, 0);
                 tmp_message = tmp_message.substr(size_message);
-                str_request = str_request.substr(0,size_id + 1) + tmp_message;
-                cout << str_request << endl;
-                request = str_to_charA(str_request,str_request.length());
+                stoca(&request[1 + size_id], tmp_message, size_message);
             }
 
             request[size_id] = FLAG_COMPLETE;
-            send(server_socket, request, size_message + size_id + 1, 0);
+            for(int i = size_id + tmp_message.length() + 1; i < size_message; ++i) request[i] = '\0';
+            send(server_socket, request, tmp_message.length() + size_id + 1, 0);
         }
 
         else {
