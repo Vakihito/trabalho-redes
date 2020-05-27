@@ -12,14 +12,15 @@
 #define PORT 8888 
 #define QUIT -9999
 #define size_nickname 20
-#define size_message 10
+#define size_message 100
 #define size_id 6
 
 //códigos presentes na requisição para identificar o tipo de operação solicitada
-#define FLAG_EXIT 'e'           //término de conexão com o servidor
-#define FLAG_INCOMPLETE 'i'     //mensagem incompleta
-#define FLAG_COMPLETE 'c'       //mensagem completa
-#define FLAG_PING 'p'           //instrução "ping-pong"
+#define FLAG_EXIT "e"               //término de conexão com o servidor
+#define FLAG_INCOMPLETE "i"         //mensagem incompleta
+#define FLAG_COMPLETE "c"           //mensagem completa
+#define FLAG_PING "p"               //instrução "ping-pong"
+#define FLAG_CHANGE_USERNAME "u"    //trocar username
 
 using namespace std;
 
@@ -98,9 +99,13 @@ char *str_to_charA(string str, int n) {
 }
 
 int check_command(string command) {
-    if(command.compare(0,8,"/connect") == 0) return 1;
-    if(command.compare(0, 5, "/quit") == 0 || command.compare(0, 5, "/exit") == 0) return 2;
+    if(command.compare(0, 8,"/connect") == 0) return 1;
+    if(command.compare(0, 5, "/quit") == 0) return 2;
     if(command.compare(0, 5, "/ping") == 0) return 3;
+
+
+    print_name("System", "red");
+    cout << "Command not found" << endl;
 
     return 0;
 }
@@ -121,23 +126,10 @@ void stoca(char *char_array, string str, unsigned int n) {
     return;
 }
 
-int socket_init() {
+int socket_init(string username) {
     int server_socket = 0;
     struct sockaddr_in serv_addr;
-    string command;
     int op_code = 0;
-
-    do {
-        print_name("User","yellow");
-        cin >> command;
-        op_code = check_command(command);
-        if (op_code != 1 && op_code != 2){
-            print_name("System", "red");
-            cout << "Invalid syntax" << endl;
-        }
-    } while(op_code != 1 && op_code != 2);
-
-    if(op_code == 2) return QUIT;
 
     print_name("System","yellow");
     cout << "Setting connection..." << endl;
@@ -157,27 +149,34 @@ int socket_init() {
     } 
 
     // aguarda conexão com o servidor
-     while(connect(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+    int max_attempts = 5, qtd_attempts = 0;
+    while(qtd_attempts < max_attempts and connect(server_socket, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
         print_name("System", "yellow");
         cout << "Connecting...\n";
         sleep(3);
+        qtd_attempts++;
+    }
+
+    if (qtd_attempts == max_attempts) {
+        print_name("System", "red");
+        cout << "Could not connect to server\n";
+        exit(QUIT);
     }
 
     print_name("System","green");
     cout << "Server connection stablished" << endl;
 
     char received[size_message + 1];
-    string tmp_message;
-    int valread = 0;
+    // Recebe o token
+    int valread = recv(server_socket, &received, size_message + 1, 0);
+    received[valread] = '\0';
+    token = stoi(received);
 
-    memset(received,0,size_message + 1);
-
-    // recebe o número de usuário
-    valread = recv(server_socket, &received, size_message + 1, 0);    
-    concat_charA_to_str(&tmp_message, received, valread);
-    // define o apelido inicial do usuário
-    nickname = "User #" + tmp_message;
-    token = stoi(tmp_message);
+    // Troca o username para o escolhido
+    string message = to_string(token) + FLAG_CHANGE_USERNAME + username;
+    char *tmp = str_to_charA(message, message.length());
+    send(server_socket, tmp, message.length(), 0);
+    free(tmp);
 
     return server_socket;   
 }
@@ -209,7 +208,7 @@ void send_message(int server_socket) {
                 stoca(&request[1 + size_id], tmp_message, size_message);
             }
 
-            request[size_id] = FLAG_COMPLETE;
+            request[size_id] = FLAG_COMPLETE[0];
             for(int i = size_id + tmp_message.length() + 1; i < size_message; ++i) request[i] = '\0';
             send(server_socket, request, tmp_message.length() + size_id + 1, 0);
         }
@@ -253,6 +252,8 @@ void receive_message(int server_socket) {
 int main(int argc, char const *argv[]) { 
     int sock = 0;
     int valread; 
+    string command;
+    int op_code = 0;
     struct sockaddr_in serv_addr; 
     string message; 
     string buffer; 
@@ -260,8 +261,36 @@ int main(int argc, char const *argv[]) {
     // move o cursor para o fim da tela
     cout << "\033[9999;1H";
 
+    // Boas vindas
+    print_text("Bem vindo! Comandos disponíveis:","red", true);
+    // Comando connect
+    print_text("/connect ","blue", false);
+    print_text("username ", "green", false);
+    print_text("- Conecta ao servidor com o ","yellow", false);
+    print_text("username ", "green", false);
+    print_text("informado.","yellow", true);
+    // Comando ping
+    print_text("/ping ","blue", false);
+    print_text("- Envia um ping para o servidor","yellow", true);
+    // Comando quit
+    print_text("/quit ","blue", false);
+    print_text("- Sai do programa","yellow", true);
+
+    do {
+        print_name("User", "yellow");
+        cin >> command;
+        op_code = check_command(command);
+    } while(op_code == 0);
+
+    if(op_code == 2) return QUIT;
+
+    string username;
+    cin >> username;
+
     // estabelece conexão com o servidor
-    sock = socket_init();
+    sock = socket_init(username);
+    close(sock);
+    return 0;
 
     if(sock == QUIT) {
         print_name("System","yellow");

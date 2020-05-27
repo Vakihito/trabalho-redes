@@ -7,25 +7,28 @@
 #include <sys/types.h>  
 #include <sys/socket.h>  
 #include <netinet/in.h>  
-#include <sys/time.h>     
+#include <sys/time.h>
+#include <cstring> 
 #include <map>
 
 #define PORT 8888        // número da porta de comunicação
 #define NAME "Server"    // nome do servidor
-#define max_token 596947 // maior valor de token
-#define size_message 10  // comprimento máximo de uma mensagem enviada pelo usuário
+#define max_token 999999 // maior valor de token
+#define size_message 100  // comprimento máximo de uma mensagem enviada pelo usuário
 #define size_token 6     // número de caracteres do token do usuário
 
 //códigos presentes na requisição para identificar o tipo de operação solicitada
-#define FLAG_EXIT 'e'           //término de conexão com o servidor
-#define FLAG_INCOMPLETE 'i'     //mensagem incompleta
-#define FLAG_COMPLETE 'c'       //mensagem completa
-#define FLAG_PING 'p'           //instrução "ping-pong"
+#define FLAG_EXIT 'e'               //término de conexão com o servidor
+#define FLAG_INCOMPLETE 'i'         //mensagem incompleta
+#define FLAG_COMPLETE 'c'           //mensagem completa
+#define FLAG_PING 'p'               //instrução "ping-pong"
+#define FLAG_CHANGE_USERNAME 'u'    //trocar username
 
 using namespace std;
 
 map<int, pair<string, int>> users;          // estrutura para armazenamento das informações de cada usuário
 map<int, pair<string, int>>::iterator it;   // iterador para busca dos usuários
+map<int, string> cache;
 
 void print_name(string name, string color) {
     if (color.compare("red") == 0)
@@ -80,8 +83,6 @@ int main(int argc, char *argv[]) {
 
     //inicializa a semente do gerador aleatório 
     srand(time(NULL));
-
-    string buffer;
 
     //set of socket descriptors  
     fd_set readfds;
@@ -158,25 +159,22 @@ int main(int argc, char *argv[]) {
             print_name(NAME,"green"); 
             cout << "New connection, socket fd is " << new_socket << ", ip is : " << inet_ntoa(address.sin_addr) << ", port : " << ntohs(address.sin_port) << '\n';
 
-            int token = rand() % max_token + 1;
+            int token = rand() % max_token;
 
-            while(users.find(token) != users.end()) {
-                token = rand() % max_token + 1;
-            }
+            while(users.find(token) != users.end())
+                token = rand() % max_token;
 
-            //armazenando informções do novo usuário
-            pair<string, int> user = make_pair("User #" + to_string(token), new_socket);
-            users.insert(make_pair(token,user));
+            //armazenando informções do novo usuário (username ainda não setado)
+            users[token] = make_pair("", new_socket);
 
             //envia token de autenticação ao usuário
             string message = to_string(token);
             char *tmp_message = str_to_charA(message, message.length());
-            if(send(new_socket, tmp_message, message.length(), 0) != message.length()) perror("send");
-
+            send(new_socket, tmp_message, message.length(), 0);
             free(tmp_message);
             
             print_name(NAME,"blue");
-            cout << "Welcome message sent successfully\n";
+            cout << "User token sent successfully\n";
 
             //add new socket to array of sockets  
             for(i = 0; i < max_clients; i++) {
@@ -194,11 +192,15 @@ int main(int argc, char *argv[]) {
         for(i = 0; i < max_clients; i++) {
             sd = client_socket[i];
 
-            if(FD_ISSET( sd, &readfds)) {
+            if(FD_ISSET(sd, &readfds)) {
                 //Verifica se é uma requisição de encerramento e retorna a mensagem adequada, 
                 //colocando o primeiro caracter para identificação do cliente 
-                char *tmp_buffer = str_to_charA(buffer, 1024);
-                if((valread = read( sd, tmp_buffer, 1024)) == 0) {
+                char buffer[size_message];
+                valread = read(sd, buffer, size_message);
+                buffer[valread] = '\0'; 
+                string buffer_str (buffer, strlen(buffer));
+
+                if(valread == 0) {
                     //Alguém se desconectou, procura por suas informações e as imprime  
                     getpeername(sd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
                     print_name(NAME,"red");
@@ -218,39 +220,49 @@ int main(int argc, char *argv[]) {
                 }
 
                 //transmite a mensagem recebida 
-                else { 
-                    tmp_buffer[valread] = '\0';                  //insere o byte indicador de término de string no fim do conteúdo lido
-                    string tokenClient (tmp_buffer, size_token); //token do cliente no formato de string
-                    char op_code = tmp_buffer[size_token];       //código da operção requisitada
+                else {
+                    string tokenClient (buffer, size_token), username;     //token do cliente no formato de string
+                    char op_code = buffer[size_token];           //código da operção requisitada
+                    int token = stoi(tokenClient);
 
+                    if (op_code == FLAG_CHANGE_USERNAME) {
+                        users[token].first = &buffer[size_token + 1];
+                        continue;
+                    }
+                    
+                    username = users[token].first;
                     //procura e imprime o nome do usuário
-                    string nickname = users.find(stoi(tokenClient))->second.first;
-                    print_name(nickname, "green");
+                    print_name(username, "green");
 
                     //executa a operação correspondente à solicitação do cliente
                     string response;        //resposta geral
                     string response_self;   //resposta específica para o cliente
-
                     //mensagem comum
-                    if(op_code == FLAG_INCOMPLETE || op_code == FLAG_COMPLETE) {
-                        string text;    
-                        if(op_code == FLAG_INCOMPLETE) text = text + buffer.substr(size_token + 1);
-                        else for (int j = 0; j < max_clients; j++) send(client_socket[j], tmp_buffer, valread, 0); 
-                        //imprime mensagem
-                        cout << &tmp_buffer[size_token + 1] << endl;
+                    if (op_code == FLAG_INCOMPLETE) {
+                        cache[token] += buffer_str;
+                    }
+                    else if (op_code == FLAG_COMPLETE) {
+                        cache[token] += buffer_str;
+
+                        char *tmp = str_to_charA(cache[token], size_message);
+                        for (int j = 0; j < max_clients; j++)
+                            send(client_socket[j], tmp, size_message, 0);
+                        free(tmp);
+                        cache[token] = "";
                     }
                     //alguém se desconectou
                     else if(op_code == FLAG_EXIT) {
-                        print_text("/exit","yellow",true);
+                        print_text("/exit", "yellow", true);
                         //procura por suas informações e as imprime  
                         getpeername(sd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
                         print_name(NAME,"red");
                         cout << "Host disconnected, ip " << inet_ntoa(address.sin_addr) << ", port " << ntohs(address.sin_port) << '\n';
                         //envia mensagem de fim de conexão para os clientes
-                        response = tokenClient + "\033[1;31m" + nickname + " left the chat" + "\033[0m"; 
-                        tmp_buffer = str_to_charA(response, size_message);
+                        response = tokenClient + "\033[1;31m" + username + " left the chat" + "\033[0m"; 
+                        char *tmp = str_to_charA(response, size_message);
                         for (int j = 0; j < max_clients; j++)
-                            send(client_socket[j], tmp_buffer, size_message, 0);
+                            send(client_socket[j], tmp, size_message, 0);
+                        free(tmp);
                         //Fecha o socket e marca como 0 na lista para reutilização  
                         close(sd);
                         //Remove as informações relacionadas ao usuário
@@ -267,12 +279,11 @@ int main(int argc, char *argv[]) {
                     else if(op_code == FLAG_PING) {
                         print_text("/ping","yellow",true);
                         response = tokenClient + "\033[1;314mP O N G\033[0m"; 
-                        tmp_buffer = str_to_charA(response, size_message);
+                        char *tmp = str_to_charA(response, size_message);
                         for (int j = 0; j < max_clients; j++)
-                            send(client_socket[j], tmp_buffer, size_message, 0);
-                    }   
-
-                    free(tmp_buffer);
+                            send(client_socket[j], tmp, size_message, 0);
+                        free(tmp);
+                    }
                 }
             } 
         }
