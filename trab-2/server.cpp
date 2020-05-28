@@ -11,69 +11,15 @@
 #include <cstring> 
 #include <map>
 
-#define PORT 8888        // número da porta de comunicação
-#define NAME "Server"    // nome do servidor
-#define max_token 999999 // maior valor de token
-#define size_message 100  // comprimento máximo de uma mensagem enviada pelo usuário
-#define size_token 6     // número de caracteres do token do usuário
+#include "chat.h"
 
-//códigos presentes na requisição para identificar o tipo de operação solicitada
-#define FLAG_EXIT 'e'               //término de conexão com o servidor
-#define FLAG_INCOMPLETE 'i'         //mensagem incompleta
-#define FLAG_COMPLETE 'c'           //mensagem completa
-#define FLAG_PING 'p'               //instrução "ping-pong"
-#define FLAG_CHANGE_USERNAME 'u'    //trocar username
+#define NAME "Server"    // nome do servidor
 
 using namespace std;
 
 map<int, pair<string, int>> users;          // estrutura para armazenamento das informações de cada usuário
 map<int, pair<string, int>>::iterator it;   // iterador para busca dos usuários
 map<int, string> cache;
-
-void print_name(string name, string color) {
-    if (color.compare("red") == 0)
-        cout << "\033[1;31m" << "[" << name << "]: " << "\033[0m";
-    else if (color.compare("green") == 0)
-        cout << "\033[1;32m" << "[" << name << "]: " << "\033[0m";
-    else if (color.compare("yellow") == 0)
-        cout << "\033[1;33m" << "[" << name << "]: " << "\033[0m";
-    else if (color.compare("blue") == 0)
-        cout << "\033[1;34m" << "[" << name << "]: " << "\033[0m";
-    else if (color.compare("white") == 0)
-        cout << "\033[1;314m" << name << "\033[0m";
-    else
-        cout << "[" << name << "]: ";
-
-    return;
-}
-
-void print_text(string text, string color, bool new_line) {
-    if (color.compare("red") == 0) cout << "\033[1;31m" << text << "\033[0m";
-    else if (color.compare("green") == 0) cout << "\033[1;32m" << text << "\033[0m";
-    else if (color.compare("yellow") == 0) cout << "\033[1;33m" << text << "\033[0m";
-    else if (color.compare("blue") == 0) cout << "\033[1;34m" << text << "\033[0m";
-    else if (color.compare("white") == 0) cout << "\033[1;314m" << text << "\033[0m";
-    else cout << text;
-
-    if (new_line) cout << endl;
-
-    return;
-}
-
-char *str_to_charA(string str, int n) {
-    char *char_array = new char[n];
-    for(unsigned int i = 0; i < n and i < str.length(); i++)
-        char_array[i] = str[i];
-    char_array[n < str.length() ? n : str.length()] = '\0';
-    return char_array;
-}
-
-void concat_charA_to_str(string *str, char *char_array, unsigned int n) {
-    for(unsigned int i = 0; i < n; i++) 
-        (*str).push_back(char_array[i]);
-
-    return;
-}
 
 int main(int argc, char *argv[]) {
     int opt = true;
@@ -222,10 +168,10 @@ int main(int argc, char *argv[]) {
                 //transmite a mensagem recebida 
                 else {
                     string tokenClient (buffer, size_token), username;     //token do cliente no formato de string
-                    char op_code = buffer[size_token];           //código da operção requisitada
+                    char op_code = buffer[size_token];                     //código da operação requisitada
                     int token = stoi(tokenClient);
 
-                    if (op_code == FLAG_CHANGE_USERNAME) {
+                    if (op_code == FLAG_CHANGE_USERNAME[0]) {
                         users[token].first = &buffer[size_token + 1];
                         continue;
                     }
@@ -238,10 +184,10 @@ int main(int argc, char *argv[]) {
                     string response;        //resposta geral
                     string response_self;   //resposta específica para o cliente
                     //mensagem comum
-                    if (op_code == FLAG_INCOMPLETE) {
+                    if (op_code == FLAG_INCOMPLETE[0]) {
                         cache[token] += buffer_str;
                     }
-                    else if (op_code == FLAG_COMPLETE) {
+                    else if (op_code == FLAG_COMPLETE[0]) {
                         cache[token] += buffer_str;
 
                         char *tmp = str_to_charA(cache[token], size_message);
@@ -251,7 +197,7 @@ int main(int argc, char *argv[]) {
                         cache[token] = "";
                     }
                     //alguém se desconectou
-                    else if(op_code == FLAG_EXIT) {
+                    else if(op_code == FLAG_EXIT[0]) {
                         print_text("/exit", "yellow", true);
                         //procura por suas informações e as imprime  
                         getpeername(sd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
@@ -276,7 +222,7 @@ int main(int argc, char *argv[]) {
                     }
 
                     //comando "/ping"
-                    else if(op_code == FLAG_PING) {
+                    else if(op_code == FLAG_PING[0]) {
                         print_text("/ping","yellow",true);
                         response = tokenClient + "\033[1;314mP O N G\033[0m"; 
                         char *tmp = str_to_charA(response, size_message);

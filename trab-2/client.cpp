@@ -9,54 +9,13 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define PORT 8888 
-#define QUIT -9999
-#define size_nickname 20
-#define size_message 100
-#define size_id 6
-
-//códigos presentes na requisição para identificar o tipo de operação solicitada
-#define FLAG_EXIT "e"               //término de conexão com o servidor
-#define FLAG_INCOMPLETE "i"         //mensagem incompleta
-#define FLAG_COMPLETE "c"           //mensagem completa
-#define FLAG_PING "p"               //instrução "ping-pong"
-#define FLAG_CHANGE_USERNAME "u"    //trocar username
+#include "chat.h"
 
 using namespace std;
 
 int token = 0;         // código identificador do usuário na aplicação
-string nickname;       // nome do usuário no servidor
+string username;       // nome do usuário no servidor
 int flag_command = 0;  // numero do comando recebedi / enviado
-
-void print_name(string name, string color) {
-    if (color.compare("red") == 0)
-        cout << "\033[1;31m" << "[" << name << "]: " << "\033[0m";
-    else if (color.compare("green") == 0)
-        cout << "\033[1;32m" << "[" << name << "]: " << "\033[0m";
-    else if (color.compare("yellow") == 0)
-        cout << "\033[1;33m" << "[" << name << "]: " << "\033[0m";
-    else if (color.compare("blue") == 0)
-        cout << "\033[1;34m" << "[" << name << "]: " << "\033[0m";
-    else if (color.compare("white") == 0)
-        cout << "\033[1;314m" << "[" << name << "]: " << "\033[0m";
-    else
-        cout << "[" << name << "]: ";
-
-    return;
-}
-
-void print_text(string text, string color, bool new_line) {
-    if (color.compare("red") == 0) cout << "\033[1;31m" << text << "\033[0m";
-    else if (color.compare("green") == 0) cout << "\033[1;32m" << text << "\033[0m";
-    else if (color.compare("yellow") == 0) cout << "\033[1;33m" << text << "\033[0m";
-    else if (color.compare("blue") == 0) cout << "\033[1;34m" << text << "\033[0m";
-    else if (color.compare("white") == 0) cout << "\033[1;314m" << text << "\033[0m";
-    else cout << text;
-
-    if (new_line) cout << endl;
-
-    return;
-}
 
 int kbhit(void) {
     struct termios oldt, newt;
@@ -83,29 +42,10 @@ int kbhit(void) {
     return 0;
 }
 
-void concat_charA_to_str(string *str, char *char_array, unsigned int n) {
-    for(unsigned int i = 0; i < n; i++) 
-        (*str).push_back(char_array[i]);
-
-    return;
-}
-
-char *str_to_charA(string str, int n) {
-    char *char_array = new char[n];
-    for (unsigned int i = 0; i < n and i < str.length(); i++)
-        char_array[i] = str[i];
-    char_array[n < str.length() ? n : str.length()] = '\0';
-    return char_array;
-}
-
 int check_command(string command) {
     if(command.compare(0, 8,"/connect") == 0) return 1;
     if(command.compare(0, 5, "/quit") == 0) return 2;
     if(command.compare(0, 5, "/ping") == 0) return 3;
-
-
-    print_name("System", "red");
-    cout << "Command not found" << endl;
 
     return 0;
 }
@@ -115,15 +55,9 @@ int check_command(string command) {
 /* ex : se token = 32, precisa colocar 000032 */   
 string fill_nickname() {
     string stoken_s = to_string(token);
-    while (stoken_s.length() < size_id)
+    while (stoken_s.length() < size_token)
         stoken_s = "0" + stoken_s;
     return stoken_s;
-}
-
-void stoca(char *char_array, string str, unsigned int n) {
-    for (unsigned int i = 0; i < n && i < str.length(); i++)
-        char_array[i] = str[i];
-    return;
 }
 
 int socket_init(string username) {
@@ -200,17 +134,17 @@ void send_message(int server_socket) {
             op_code = FLAG_INCOMPLETE;
             tmp_message = message;
             str_request = str_request + op_code + tmp_message;
-            request = str_to_charA(str_request, size_message + size_id + 1);
+            request = str_to_charA(str_request, size_message + size_token + 1);
 
             while(tmp_message.length() > size_message) {
-                send(server_socket, &request, size_id + size_message + 1, 0);
+                send(server_socket, &request, size_token + size_message + 1, 0);
                 tmp_message = tmp_message.substr(size_message);
-                stoca(&request[1 + size_id], tmp_message, size_message);
+                stoca(&request[1 + size_token], tmp_message, size_message);
             }
 
-            request[size_id] = FLAG_COMPLETE[0];
-            for(int i = size_id + tmp_message.length() + 1; i < size_message; ++i) request[i] = '\0';
-            send(server_socket, request, tmp_message.length() + size_id + 1, 0);
+            request[size_token] = FLAG_COMPLETE[0];
+            for(int i = size_token + tmp_message.length() + 1; i < size_message; ++i) request[i] = '\0';
+            send(server_socket, request, tmp_message.length() + size_token + 1, 0);
         }
 
         else {
@@ -219,10 +153,10 @@ void send_message(int server_socket) {
                                                       
             str_request = str_request + op_code;                       //insere o código da operação e a mensagem          
             request = str_to_charA(str_request,str_request.length());  //converte o formato para vetor de caracteres
-            send(server_socket, request, size_id + 1, 0);              //envia a requisição ao servidor
+            send(server_socket, request, size_token + 1, 0);              //envia a requisição ao servidor
         }
 
-        memset(request, 0, size_id + tmp_message.length() + 1);
+        memset(request, 0, size_token + tmp_message.length() + 1);
         message.clear();
         tmp_message.clear();
 
@@ -241,7 +175,7 @@ void receive_message(int server_socket) {
         char *tmp_buffer = str_to_charA(buffer, 1024);
         valread = read(server_socket, tmp_buffer, 1024);
         string clientToken (tmp_buffer, 6);
-        print_name(nickname, "green");
+        print_name(username, "green");
         cout << &tmp_buffer[6] << endl;
         free(tmp_buffer);
     }
@@ -271,7 +205,7 @@ int main(int argc, char const *argv[]) {
     print_text("informado.","yellow", true);
     // Comando ping
     print_text("/ping ","blue", false);
-    print_text("- Envia um ping para o servidor","yellow", true);
+    print_text("- Envia um ping para o servidor (quando conectado)","yellow", true);
     // Comando quit
     print_text("/quit ","blue", false);
     print_text("- Sai do programa","yellow", true);
@@ -280,17 +214,18 @@ int main(int argc, char const *argv[]) {
         print_name("User", "yellow");
         cin >> command;
         op_code = check_command(command);
+        if(op_code == 0) {
+            print_name("System", "red");
+            cout << "Command not found" << endl;
+        }
     } while(op_code == 0);
 
     if(op_code == 2) return QUIT;
 
-    string username;
     cin >> username;
 
     // estabelece conexão com o servidor
     sock = socket_init(username);
-    close(sock);
-    return 0;
 
     if(sock == QUIT) {
         print_name("System","yellow");
