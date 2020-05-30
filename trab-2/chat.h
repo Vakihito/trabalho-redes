@@ -10,12 +10,19 @@ using namespace std;
 #define FLAG_PING "p"               //instrução "ping-pong"
 #define FLAG_CHANGE_USERNAME "u"    //trocar username
 
+//códigos presentes na resposta do servidor para os usuários
+#define INVALID_USERNAME 'r'  //nome de usuário repetido
+#define VALID_USERNAME 'a'    //nome de usuário aceito
+#define SERVER 's'            //mensagem enviada pelo servidor
+#define CLIENT 'c'            //mensagem enviada por um cliente         
+
 //constantes utilizadas para a construção e processamento das requisições dos usuários
 #define PORT 8888            // número da porta de comunicação
 #define QUIT -9999           // código de encerramento/falha na comunicação do cliente com o servidor
 #define max_token 999999     // maior valor de token
 #define size_message 100     // comprimento máximo de uma mensagem enviada pelo usuário
 #define size_token 6         // número de caracteres do token do usuário
+#define size_username 20     // número de caracteres do nome do usuário
 
 /*
     Imprime nome no formato "[name]: " com a cor especificada

@@ -60,7 +60,55 @@ string fill_nickname() {
     return stoken_s;
 }
 
-int socket_init(string username) {
+string choose_username(int server_socket) {
+    string name;
+    string message;
+    bool valid_username = false;
+    char *request;
+    char response;
+    int valread;
+
+    getchar();
+
+    while(!valid_username) {
+        print_name("System","yellow");
+        cout << "Write your username" << endl;
+        print_name("User","yellow");
+        getline(cin, name);
+
+        if(name.length() > size_username) {
+            print_name("System","red");
+            cout << "Exceeded limit of " << size_username << " characters" << endl;
+        }
+
+        message = fill_nickname() + FLAG_CHANGE_USERNAME + name;
+        request = str_to_charA(message, size_token + name.length() + 1);
+        send(server_socket, request, size_token + name.length() + 1, 0);
+
+        valread = recv(server_socket, &response, 1, 0);
+
+        if(response == INVALID_USERNAME) {
+            print_name("Server","red");
+            cout << "This username already exists" << endl;
+        }
+
+        else if(response == VALID_USERNAME) {
+            valid_username = true;
+            username = name;
+            print_name("Server","green");
+            cout << "Registered username as " << username << endl;
+        }
+
+        else {
+            print_name("Server","red");
+            cout << "Request error" << endl;
+        }
+    }
+
+    return username;
+}
+
+int socket_init() {
     int server_socket = 0;
     struct sockaddr_in serv_addr;
     int op_code = 0;
@@ -107,10 +155,7 @@ int socket_init(string username) {
     token = stoi(received);
 
     // Troca o username para o escolhido
-    string message = to_string(token) + FLAG_CHANGE_USERNAME + username;
-    char *tmp = str_to_charA(message, message.length());
-    send(server_socket, tmp, message.length(), 0);
-    free(tmp);
+    username = choose_username(server_socket);
 
     return server_socket;   
 }
@@ -196,19 +241,16 @@ int main(int argc, char const *argv[]) {
     cout << "\033[9999;1H";
 
     // Boas vindas
-    print_text("Bem vindo! Comandos disponíveis:","red", true);
+    print_text("Bem vindo! Comandos disponíveis:","green", true);
     // Comando connect
     print_text("/connect ","blue", false);
-    print_text("username ", "green", false);
-    print_text("- Conecta ao servidor com o ","yellow", false);
-    print_text("username ", "green", false);
-    print_text("informado.","yellow", true);
+    print_text("- Conecta ao servidor","white", true);
     // Comando ping
     print_text("/ping ","blue", false);
-    print_text("- Envia um ping para o servidor (quando conectado)","yellow", true);
+    print_text("- Envia um ping para o servidor (quando conectado)","white", true);
     // Comando quit
     print_text("/quit ","blue", false);
-    print_text("- Sai do programa","yellow", true);
+    print_text("- Sai do programa","white", true);
 
     do {
         print_name("User", "yellow");
@@ -222,18 +264,14 @@ int main(int argc, char const *argv[]) {
 
     if(op_code == 2) return QUIT;
 
-    cin >> username;
-
     // estabelece conexão com o servidor
-    sock = socket_init(username);
+    sock = socket_init();
 
     if(sock == QUIT) {
         print_name("System","yellow");
         cout << "Closing application..." << endl;
         return 0;
     }
-
-    getchar();
 
     thread receive_thread(receive_message, sock);
     thread response_thread(send_message, sock);

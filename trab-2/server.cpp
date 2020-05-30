@@ -141,8 +141,8 @@ int main(int argc, char *argv[]) {
             if(FD_ISSET(sd, &readfds)) {
                 //Verifica se é uma requisição de encerramento e retorna a mensagem adequada, 
                 //colocando o primeiro caracter para identificação do cliente 
-                char buffer[size_message];
-                valread = read(sd, buffer, size_message);
+                char buffer[size_message + size_token + 1];
+                valread = read(sd, buffer, size_message + size_token + 1);
                 buffer[valread] = '\0'; 
                 string buffer_str (buffer, strlen(buffer));
 
@@ -167,12 +167,32 @@ int main(int argc, char *argv[]) {
 
                 //transmite a mensagem recebida 
                 else {
-                    string tokenClient (buffer, size_token), username;     //token do cliente no formato de string
-                    char op_code = buffer[size_token];                     //código da operação requisitada
+                    string tokenClient (buffer, size_token);    //token do cliente no formato de string
+                    string username;
+                    char op_code = buffer[size_token];          //código da operação requisitada
                     int token = stoi(tokenClient);
 
                     if (op_code == FLAG_CHANGE_USERNAME[0]) {
-                        users[token].first = &buffer[size_token + 1];
+                        bool find = false;
+                        string name;
+                        char response;
+
+                        concat_charA_to_str(&name,&buffer[size_token + 1],size_username);
+                        for(it = users.begin(); it != users.end(); ++it) {  
+                            if(name.compare(it->second.first) == 0) {
+                                find = true;
+                                break;
+                            }
+                        }
+
+                        if(find == false) { 
+                            response = VALID_USERNAME;
+                            users[token].first = name;
+                        }
+
+                        else response = INVALID_USERNAME;
+
+                        send(client_socket[i], &response, 1, 0);
                         continue;
                     }
                     
@@ -184,7 +204,7 @@ int main(int argc, char *argv[]) {
                     string response;        //resposta geral
                     string response_self;   //resposta específica para o cliente
                     //mensagem comum
-                    if (op_code == FLAG_INCOMPLETE[0]) {
+                    if(op_code == FLAG_INCOMPLETE[0]) {
                         cache[token] += buffer_str;
                     }
                     else if (op_code == FLAG_COMPLETE[0]) {
