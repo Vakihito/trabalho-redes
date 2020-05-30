@@ -13,8 +13,8 @@ using namespace std;
 //códigos presentes na resposta do servidor para os usuários
 #define INVALID_USERNAME 'r'  //nome de usuário repetido
 #define VALID_USERNAME 'a'    //nome de usuário aceito
-#define SERVER 's'            //mensagem enviada pelo servidor
-#define CLIENT 'c'            //mensagem enviada por um cliente         
+#define SERVER "s"            //mensagem enviada pelo servidor
+#define CLIENT "c"            //mensagem enviada por um cliente         
 
 //constantes utilizadas para a construção e processamento das requisições dos usuários
 #define PORT 8888            // número da porta de comunicação

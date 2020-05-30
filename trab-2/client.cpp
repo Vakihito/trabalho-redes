@@ -82,8 +82,9 @@ string choose_username(int server_socket) {
         }
 
         message = fill_nickname() + FLAG_CHANGE_USERNAME + name;
-        request = str_to_charA(message, size_token + name.length() + 1);
-        send(server_socket, request, size_token + name.length() + 1, 0);
+        request = str_to_charA(message, size_token + size_username + 1);
+        memset(&request[1 + size_token + name.length()],0,size_username - name.length());
+        send(server_socket, request, size_token + size_username + 1, 0);
 
         valread = recv(server_socket, &response, 1, 0);
 
@@ -217,11 +218,33 @@ void receive_message(int server_socket) {
     char received[size_message + 1];
 
     while (flag_command != 2) {
-        char *tmp_buffer = str_to_charA(buffer, 1024);
-        valread = read(server_socket, tmp_buffer, 1024);
-        string clientToken (tmp_buffer, 6);
-        print_name(username, "green");
-        cout << &tmp_buffer[6] << endl;
+        char *tmp_buffer = str_to_charA(buffer, 1 + size_username + size_message);
+        valread = read(server_socket, tmp_buffer, 1 + size_username + size_message);
+        char sent_by = tmp_buffer[0];
+
+        //mensagem enviada por um cliente
+        if(sent_by == CLIENT[0]) {
+            string client = &tmp_buffer[1];
+            string message = &tmp_buffer[1 + size_username];
+            //outro cliente
+            if(client.compare(username) != 0) {
+                print_name(client, "blue");
+                print_text(message,"",true);
+            }
+            //você
+            else {
+                print_name(username, "green");
+                print_text(message,"white",true);
+            }
+        } 
+
+        //mensagem enviada pelo servidor
+        else if(sent_by == SERVER[0]) {
+            string message = &tmp_buffer[1];
+            print_name("Server","green");  
+            cout << message << endl;
+        }
+
         free(tmp_buffer);
     }
 
@@ -238,6 +261,7 @@ int main(int argc, char const *argv[]) {
     string buffer; 
 
     // move o cursor para o fim da tela
+    cout << "\033[2J\033[1;1H";
     cout << "\033[9999;1H";
 
     // Boas vindas
@@ -251,6 +275,7 @@ int main(int argc, char const *argv[]) {
     // Comando quit
     print_text("/quit ","blue", false);
     print_text("- Sai do programa","white", true);
+    cout << endl;
 
     do {
         print_name("User", "yellow");
