@@ -8,6 +8,7 @@
 #include <termios.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <csignal>
 
 #include "chat.h"
 
@@ -16,6 +17,10 @@ using namespace std;
 int token = 0;         // código identificador do usuário na aplicação
 string username;       // nome do usuário no servidor
 int flag_command = 0;  // numero do comando recebedi / enviado
+
+void signalHandler( int signum ) {
+   cout << "\nSIGINT (CTRL + C) não tem efeito neste programa. Por favor, saia por meio do comando '/quit'\n";
+}
 
 int kbhit(void) {
     struct termios oldt, newt;
@@ -252,6 +257,8 @@ void receive_message(int server_socket) {
 }
    
 int main(int argc, char const *argv[]) { 
+    signal(SIGINT, signalHandler);
+
     int sock = 0;
     int valread; 
     string command;
@@ -269,9 +276,6 @@ int main(int argc, char const *argv[]) {
     // Comando connect
     print_text("/connect ","blue", false);
     print_text("- Conecta ao servidor","white", true);
-    // Comando ping
-    print_text("/ping ","blue", false);
-    print_text("- Envia um ping para o servidor (quando conectado)","white", true);
     // Comando quit
     print_text("/quit ","blue", false);
     print_text("- Sai do programa","white", true);
