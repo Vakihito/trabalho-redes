@@ -177,6 +177,10 @@ void send_message(int server_socket) {
         string tmp_message;
 
         getline(cin, message);                  //recebe a entrada do usuário
+        // checks for ctr + d
+        if (cin.eof() == 1)
+            message ="/quit";
+        
         flag_command = check_command(message);  //avalia se a mensagem corresponde a algum comando da aplicação
         str_request = to_string(token);         //insere o token na requisição
 
