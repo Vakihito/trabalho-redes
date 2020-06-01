@@ -21,6 +21,26 @@ map<int, pair<string, int>> users;          // estrutura para armazenamento das 
 map<int, pair<string, int>>::iterator it;   // iterador para busca dos usuários
 map<int, string> cache;
 
+void send_to_all(int client_socket[], int max_clients, char *message, int _size_message) {
+    for(int j = 0; j < max_clients; j++){
+        int max_attempts = 5, attempt = 0;
+        while (attempt < max_attempts && send(client_socket[j], message, _size_message, 0) == -1)
+            attempt++;
+        if (attempt == max_attempts){
+            //Fecha o socket e marca como 0 na lista para reutilização  
+            close(j);
+            //Remove as informações relacionadas ao usuário
+            for(it = users.begin(); it != users.end(); it++) {
+                if(it->second.second == client_socket[j]) {
+                    users.erase(it);
+                    break;
+                }
+            } 
+            client_socket[j] = 0;
+        }
+    }
+}
+
 int main(int argc, char *argv[]) {
     int opt = true;
     int master_socket, addrlen, new_socket, client_socket[30], max_clients = 30, activity, i, valread, sd;
@@ -211,8 +231,7 @@ int main(int argc, char *argv[]) {
                         cout << cache[token] << endl;
                         cache[token] = CLIENT + users[token].first + cache[token];
                         char *tmp = str_to_charA(cache[token], 1 + size_username + size_message);
-                        for(int j = 0; j < max_clients; j++)
-                            send(client_socket[j], tmp, 1 + size_username + size_message, 0);
+                        send_to_all(client_socket, max_clients, tmp, 1 + size_username + size_message);
                         free(tmp);
                         cache[token] = "";
                     }
@@ -229,8 +248,7 @@ int main(int argc, char *argv[]) {
                         response = origin + "\033[1;31m" + username.substr(0,username.find('\0')) + " left the chat" + "\033[0m"; 
                         cout << response << endl;
                         char *tmp = str_to_charA(response, 1 + size_message);
-                        for (int j = 0; j < max_clients; j++)
-                            send(client_socket[j], tmp, 1 + size_message, 0);
+                        send_to_all(client_socket, max_clients, tmp, 1 + size_message);
                         free(tmp);
                         //Fecha o socket e marca como 0 na lista para reutilização  
                         close(sd);
@@ -250,8 +268,7 @@ int main(int argc, char *argv[]) {
                         print_text("/ping","yellow",true);
                         response = origin + "\033[1;314mP O N G\033[0m"; 
                         char *tmp = str_to_charA(response, 1 + size_message);
-                        for (int j = 0; j < max_clients; j++)
-                            send(client_socket[j], tmp, 1 + size_message, 0);
+                        send_to_all(client_socket, max_clients, tmp, 1 + size_message);
                         free(tmp);
                     }
                 }
