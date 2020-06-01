@@ -21,11 +21,13 @@ map<int, pair<string, int>> users;          // estrutura para armazenamento das 
 map<int, pair<string, int>>::iterator it;   // iterador para busca dos usuários
 map<int, string> cache;
 
-void send_to_all(int client_socket[], int max_clients, char *message, int _size_message) {
-    for(int j = 0; j < max_clients; j++){
+void send_to_all(int client_socket[], int clients, char *message, int _size_message) {
+    for(int j = 0; j < clients; j++){
         int max_attempts = 5, attempt = 0;
-        while (attempt < max_attempts && send(client_socket[j], message, _size_message, 0) == -1)
+        while (attempt < max_attempts && send(client_socket[j], message, _size_message, 0) == -1) {
+            cout << "erro" << endl;
             attempt++;
+        }
         if (attempt == max_attempts){
             //Fecha o socket e marca como 0 na lista para reutilização  
             close(j);
@@ -231,7 +233,7 @@ int main(int argc, char *argv[]) {
                         cout << cache[token] << endl;
                         cache[token] = CLIENT + users[token].first + cache[token];
                         char *tmp = str_to_charA(cache[token], 1 + size_username + size_message);
-                        send_to_all(client_socket, max_clients, tmp, 1 + size_username + size_message);
+                        send_to_all(client_socket, users.size(), tmp, 1 + size_username + size_message);
                         free(tmp);
                         cache[token] = "";
                     }
@@ -246,9 +248,8 @@ int main(int argc, char *argv[]) {
                         cout << "Host disconnected, ip " << inet_ntoa(address.sin_addr) << ", port " << ntohs(address.sin_port) << '\n';
                         //envia mensagem de fim de conexão para os clientes
                         response = origin + "\033[1;31m" + username.substr(0,username.find('\0')) + " left the chat" + "\033[0m"; 
-                        cout << response << endl;
                         char *tmp = str_to_charA(response, 1 + size_message);
-                        send_to_all(client_socket, max_clients, tmp, 1 + size_message);
+                        send_to_all(client_socket, users.size(), tmp, 1 + size_message);
                         free(tmp);
                         //Fecha o socket e marca como 0 na lista para reutilização  
                         close(sd);
@@ -268,7 +269,7 @@ int main(int argc, char *argv[]) {
                         print_text("/ping","yellow",true);
                         response = origin + "\033[1;314mP O N G\033[0m"; 
                         char *tmp = str_to_charA(response, 1 + size_message);
-                        send_to_all(client_socket, max_clients, tmp, 1 + size_message);
+                        send_to_all(client_socket, users.size(), tmp, 1 + size_message);
                         free(tmp);
                     }
                 }
