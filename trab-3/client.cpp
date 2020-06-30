@@ -137,7 +137,7 @@ void define_channel(int server_socket){
     channel = "#" + channelAux;
     string token_s = fill_nickname();
     channelAux = token_s + channel;
-    cout << "channelAux : " <<channelAux << endl;
+
     char* request = str_to_charA(channelAux, channelAux.length() + size_token + 1);
     
     send(server_socket, request, channelAux.length() + size_token + 1, 0);

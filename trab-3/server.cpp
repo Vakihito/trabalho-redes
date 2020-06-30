@@ -19,7 +19,7 @@
 using namespace std;
 
 map<int, pair<string, int>> users;          // estrutura para armazenamento das informações de cada usuário
-map<string, vector<int>> channels;                  //  <channel , < users > >;
+map<string, vector<int>> channels;                  //  <channel , < tokens > >;
 map<int, pair<string, int>>::iterator it;   // iterador para busca dos usuários
 map<int, string> cache;
 
@@ -52,8 +52,6 @@ void send_to_channel(int client_socket[], int max_clients, char *message, int _s
     // percorrendo usuários do canal
     for (int i = 0; i <  size_channel; i++){
         send(users[channels[chan][i]].second, message, _size_message, 0);
-        cout << "enviando para : " << users[channels[chan][i]].second << endl;
-
     }
 
 }
@@ -276,7 +274,7 @@ int main(int argc, char *argv[]) {
                     }
                     else if(op_code == FLAG_CHANNEL[0]) {
                         // o canal ainda não existia
-                        
+                        string responseAux = "";
                         string origin = SERVER;
                         if (channels.find(buffer_str) == channels.end())
                         {
@@ -284,16 +282,18 @@ int main(int argc, char *argv[]) {
                             vector <int> users_channel = {token};
                             channels[buffer_str] = users_channel;
                             // enviando mensagem de resposta
+                            responseAux = "channel : " + buffer_str + ", created by " + users[token].first;
                             response = origin + "channel : " + buffer_str + ", created by " + users[token].first; 
                         }else{
                             // insere no canal
                             // cout << "entrei aqui 4" << endl;
                             channels[buffer_str].push_back(token);
-
+                            responseAux = "channel : " + buffer_str + ", joined by : " + users[token].first;
                             response = origin + "channel : " + buffer_str + ", joined by : " + users[token].first;  
                         // cout << "entrei aqui 5" << endl;
                         }
-                        cout << " response : " << response << endl;
+                        cout  << responseAux << endl;
+                        response = origin + responseAux;
                         char *tmp = str_to_charA(response, 1 + response.length());
                         send_to_all(client_socket, max_clients, tmp, 1 + response.length());
                         free(tmp);
