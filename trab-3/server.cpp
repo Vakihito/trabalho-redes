@@ -46,6 +46,17 @@ void send_to_all(int client_socket[], int max_clients, char *message, int _size_
     }
 }
 
+/* Para enviar o token do usuário pela mensagem precisamos de um tamanho padrão */
+/* esta função completa com zeros caso seja menor que o tamanho esperado */
+/* ex : se token = 32, precisa colocar 000032 */   
+string fill_nickname(int token) {
+    string stoken_s = to_string(token);
+    while (stoken_s.length() < size_token)
+        stoken_s = "0" + stoken_s;
+    return stoken_s;
+}
+
+
 int main(int argc, char *argv[]) {
     int opt = true;
     int master_socket, addrlen, new_socket, client_socket[30], max_clients = 30, activity, i, valread, sd;
@@ -233,15 +244,27 @@ int main(int argc, char *argv[]) {
                     }
                     else if(op_code == FLAG_CHANNEL[0]) {
                         // o canal ainda não existia
+                        string origin = SERVER;
                         if (channels.find(buffer_str) == channels.end())
                         {
                             // cria o vector e insere no canal
                             vector <int> users_channel = {token};
                             channels[buffer_str] = users_channel;
+                            // enviando mensagem de resposta
+                            response = origin + "channel : " + buffer_str + ", created by " + users[token].first; 
                         }else{
                             // insere no canal
+                            // cout << "entrei aqui 4" << endl;
                             channels[buffer_str].push_back(token);
+
+                            response = origin + "channel : " + buffer_str + ", enter : " + users[token].first;  
+                        // cout << "entrei aqui 5" << endl;
                         }
+                        cout << " response : " << response << endl;
+                        char *tmp = str_to_charA(response, 1 + response.length());
+                        cout << " tmp : " << tmp << endl;
+                        send_to_all(client_socket, max_clients, tmp, 1 + response.length());
+                        free(tmp);
                         
                         
                     }
