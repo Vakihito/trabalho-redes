@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include <cstring> 
 #include <map>
+#include <vector>
 
 #include "chat.h"
 
@@ -18,7 +19,7 @@
 using namespace std;
 
 map<int, pair<string, int>> users;          // estrutura para armazenamento das informações de cada usuário
-map<int, string> channels;                  //  <token, channel;
+map<string, vector<int>> channels;                  //  <channel , < users > >;
 map<int, pair<string, int>>::iterator it;   // iterador para busca dos usuários
 map<int, string> cache;
 
@@ -231,9 +232,18 @@ int main(int argc, char *argv[]) {
                         cache[token] += buffer_str;
                     }
                     else if(op_code == FLAG_CHANNEL[0]) {
-                        cache[token] += buffer_str;
-                        channels[token] = buffer_str;
-                        cout << "token : " << token << "channel : " << channels[token] << endl;
+                        // o canal ainda não existia
+                        if (channels.find(buffer_str) == channels.end())
+                        {
+                            // cria o vector e insere no canal
+                            vector <int> users_channel = {token};
+                            channels[buffer_str] = users_channel;
+                        }else{
+                            // insere no canal
+                            channels[buffer_str].push_back(token);
+                        }
+                        
+                        
                     }
                     else if(op_code == FLAG_COMPLETE[0]) {
                         cache[token] += buffer_str;
