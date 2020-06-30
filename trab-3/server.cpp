@@ -46,6 +46,38 @@ void send_to_all(int client_socket[], int max_clients, char *message, int _size_
     }
 }
 
+void send_to_channel(int client_socket[], int max_clients, char *message, int _size_message, string chan) {
+    
+    int size_channel = int(channels[chan].size());
+    // percorrendo usuários do canal
+    for (int i = 0; i <  size_channel; i++){
+        send(users[channels[chan][i]].second, message, _size_message, 0);
+        cout << "enviando para : " << users[channels[chan][i]].second << endl;
+
+    }
+
+}
+
+string find_channel(int token){
+    std::map<std::string, vector<int>>::iterator it = channels.begin();
+
+    while (it != channels.end())
+    {
+        int size_channel = int(it->second.size());
+        // percorrendo usuários
+        for (int i = 0; i < size_channel; i++)
+        {
+            if (token == it->second[i])
+            {
+                return it->first;
+            }
+        }
+        it++;
+    }
+    return "???";
+}
+
+
 /* Para enviar o token do usuário pela mensagem precisamos de um tamanho padrão */
 /* esta função completa com zeros caso seja menor que o tamanho esperado */
 /* ex : se token = 32, precisa colocar 000032 */   
@@ -244,6 +276,7 @@ int main(int argc, char *argv[]) {
                     }
                     else if(op_code == FLAG_CHANNEL[0]) {
                         // o canal ainda não existia
+                        
                         string origin = SERVER;
                         if (channels.find(buffer_str) == channels.end())
                         {
@@ -257,12 +290,11 @@ int main(int argc, char *argv[]) {
                             // cout << "entrei aqui 4" << endl;
                             channels[buffer_str].push_back(token);
 
-                            response = origin + "channel : " + buffer_str + ", enter : " + users[token].first;  
+                            response = origin + "channel : " + buffer_str + ", joined by : " + users[token].first;  
                         // cout << "entrei aqui 5" << endl;
                         }
                         cout << " response : " << response << endl;
                         char *tmp = str_to_charA(response, 1 + response.length());
-                        cout << " tmp : " << tmp << endl;
                         send_to_all(client_socket, max_clients, tmp, 1 + response.length());
                         free(tmp);
                         
@@ -273,7 +305,8 @@ int main(int argc, char *argv[]) {
                         cout << cache[token] << endl;
                         cache[token] = CLIENT + users[token].first + cache[token];
                         char *tmp = str_to_charA(cache[token], 1 + size_username + size_message);
-                        send_to_all(client_socket, max_clients, tmp, 1 + size_username + size_message);
+                        send_to_channel(client_socket, max_clients, tmp, 1 + size_username + size_message,find_channel(token));
+                        // send_to_all(client_socket, max_clients, tmp, 1 + size_username + size_message);
                         free(tmp);
                         cache[token] = "";
                     }
