@@ -52,6 +52,7 @@ int check_command(string command) {
     if(command.compare(0, 8,"/connect") == 0) return 1;
     if(command.compare(0, 5, "/quit") == 0) return 2;
     if(command.compare(0, 5, "/ping") == 0) return 3;
+    if(command.compare(0, 5, "/join") == 0) return 4;
 
     return 0;
 }
@@ -117,12 +118,14 @@ string choose_username(int server_socket) {
     return username;
 }
 
+
 void define_channel(int server_socket){
     
     string channelAux; 
     bool validChannel = true;
-    print_name("System","yellow");
-    cout << "Select your channel" << endl;
+    getchar();
+    print_name("System", "yellow");
+    cout << "Entre com o nome do canal" << endl;
     do {
         validChannel = true;
         print_name("User","yellow");
@@ -194,10 +197,10 @@ int socket_init() {
 
     // Troca o username para o escolhido
     username = choose_username(server_socket);
-    define_channel(server_socket);
 
     return server_socket;   
 }
+
 
 
 
@@ -335,6 +338,30 @@ int main(int argc, char const *argv[]) {
 
     // estabelece conexão com o servidor
     sock = socket_init();
+
+
+
+    print_text("/join","blue", false);
+    cout << " - para entrar em um canal. " << endl;
+    print_text("/quit","blue", false);
+    cout << " - para sair. " << endl;
+    do {
+        print_name("User", "yellow");
+        cin >> command;
+        op_code = check_command(command);
+        cout << "opcode : " <<  op_code << endl;
+        if(op_code == 0) {
+            print_name("System", "red");
+            cout << "Command not found" << endl;
+        }
+        if(op_code == 2) return QUIT;
+    } while(op_code != 4);
+
+    
+    
+    define_channel(sock);
+
+
     
 
     if(sock == QUIT) {
