@@ -75,6 +75,37 @@ string find_channel(int token){
     return "???";
 }
 
+bool remove_user_from_channel(int token, string chan, int* client_socket, int max_clients){
+    std::map<std::string, vector<int>>::iterator it = channels.begin();
+    // percorrendo os canais
+    while (it != channels.end())
+    {
+        int size_channel = int(it->second.size());
+        // percorrendo usuários
+        for (int i = 0; i < size_channel; i++)
+        {
+            if (token == it->second[i])
+            {
+                // tentando remover do mesmo canal e entrar no mesmo canal 
+                // if (it->first == chan){
+                //     return false;
+                // }
+                // string origin = SERVER;
+                // string response = origin + " channel : " + it->first + ", left by : " + users[it->second[i]].first; 
+                
+                // removendo o elemento do canal
+                it->second.erase(it->second.begin() + i);
+                
+                // char *tmp = str_to_charA(response, 1 + response.length());
+                // send_to_all(client_socket, max_clients, tmp, 1 + response.length());
+                return true;
+            }
+        }
+        it++;
+    }
+    return false;
+}
+
 
 /* Para enviar o token do usuário pela mensagem precisamos de um tamanho padrão */
 /* esta função completa com zeros caso seja menor que o tamanho esperado */
@@ -272,10 +303,14 @@ int main(int argc, char *argv[]) {
                     if(op_code == FLAG_INCOMPLETE[0]) {
                         cache[token] += buffer_str;
                     }
+                    // commando para criar/entrar em um canal
                     else if(op_code == FLAG_CHANNEL[0]) {
                         // o canal ainda não existia
                         string responseAux = "";
                         string origin = SERVER;
+                        // se um usuário sair e entar no mesmo canal ele vira o último da fila
+                        remove_user_from_channel(token,buffer_str,client_socket, max_clients);
+
                         if (channels.find(buffer_str) == channels.end())
                         {
                             // cria o vector e insere no canal

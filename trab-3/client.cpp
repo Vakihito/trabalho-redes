@@ -123,7 +123,6 @@ void define_channel(int server_socket){
     
     string channelAux; 
     bool validChannel = true;
-    getchar();
     print_name("System", "yellow");
     cout << "Entre com o nome do canal" << endl;
     do {
@@ -147,6 +146,8 @@ void define_channel(int server_socket){
 
     print_name("System","green");
     cout << "connecting... " << endl;
+    free(request);
+        
 }
 
 int socket_init() {
@@ -203,8 +204,6 @@ int socket_init() {
 
 
 
-
-
 void send_message(int server_socket) {
     string message;                            //mensagem do usuário
     int id_lenght;                             //número de caracteres ocupados pelo id do cliente (incluindo o '\0')
@@ -240,21 +239,24 @@ void send_message(int server_socket) {
             for(int i = size_token + tmp_message.length() + 1; i < size_message; ++i) request[i] = '\0';
             send(server_socket, request, tmp_message.length() + size_token + 1, 0);
         }
-
-        else {
+        else if (flag_command != 4) {
             if(flag_command == 2) op_code = FLAG_EXIT;        // envio de desconexão com o servidor
-            else if(flag_command == 3) op_code = FLAG_PING;   // envio do comando "/ping"
-                                                      
+            else if(flag_command == 3) op_code = FLAG_PING;   // envio do comando "/ping"                                          
             str_request = str_request + op_code;                       //insere o código da operação e a mensagem          
             request = str_to_charA(str_request,str_request.length());  //converte o formato para vetor de caracteres
             send(server_socket, request, size_token + 1, 0);              //envia a requisição ao servidor
         }
+        // caso comando seja /join
+        if(flag_command == 4){
+            define_channel(server_socket);
+        }else{
+            memset(request, 0, size_token + tmp_message.length() + 1);
+            message.clear();
+            tmp_message.clear();
+            free(request);
+        }
 
-        memset(request, 0, size_token + tmp_message.length() + 1);
-        message.clear();
-        tmp_message.clear();
-
-        free(request);
+        
     }
 
     return;   
@@ -349,16 +351,13 @@ int main(int argc, char const *argv[]) {
         print_name("User", "yellow");
         cin >> command;
         op_code = check_command(command);
-        cout << "opcode : " <<  op_code << endl;
         if(op_code == 0) {
             print_name("System", "red");
             cout << "Command not found" << endl;
         }
         if(op_code == 2) return QUIT;
     } while(op_code != 4);
-
-    
-    
+    getchar();
     define_channel(sock);
 
 
