@@ -374,18 +374,18 @@ int main(int argc, char *argv[]) {
                     // comando para se kickar uma pessoa
                     else if(op_code == FLAG_KICK[0]){
                         bool isAdm = false;
-                        cout << "HERE 0" << endl;
+                        // cout << "HERE 0" << endl;
                         string adm_channel = check_if_admin(token, &isAdm);
-                        cout << "HERE 1" << endl;
+                        // cout << "HERE 1" << endl;
                         int token_to_remove = find_token_by_name(buffer_str);
-                        cout << "HERE 2" << endl;
+                        // cout << "HERE 2" << endl;
 
                         string channel_user_to_remove = find_channel(token_to_remove);
-                        cout << "HERE 3" << endl;
-                        cout << "isAdm : "<< isAdm << endl;
-                        cout << "adm_channel : "<< adm_channel << endl;
-                        cout << "token_to_remove : "<< token_to_remove << endl;
-                        cout << "channel_user_to_remove : "<< channel_user_to_remove << endl;
+                        // cout << "HERE 3" << endl;
+                        // cout << "isAdm : "<< isAdm << endl;
+                        // cout << "adm_channel : "<< adm_channel << endl;
+                        // cout << "token_to_remove : "<< token_to_remove << endl;
+                        // cout << "channel_user_to_remove : "<< channel_user_to_remove << endl;
 
                         if (isAdm && token_to_remove != -1 && channel_user_to_remove.compare(adm_channel)  == 0)
                         {
