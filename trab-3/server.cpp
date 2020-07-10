@@ -18,7 +18,7 @@
 
 using namespace std;
 
-map<int, pair<string, int>> users;          // estrutura para armazenamento das informações de cada usuário
+map<int, pair<string, int>> users;          // <token, <nome, socket>>
 map<string, vector<int>> channels;                  //  <channel , < tokens > >;
 map<int, pair<string, int>>::iterator it;   // iterador para busca dos usuários
 map<int, string> cache;
@@ -57,54 +57,86 @@ void send_to_channel(int client_socket[], int max_clients, char *message, int _s
 }
 
 string find_channel(int token){
-    std::map<std::string, vector<int>>::iterator it = channels.begin();
+    std::map<std::string, vector<int>>::iterator ite = channels.begin();
 
-    while (it != channels.end())
+    while (ite != channels.end())
     {
-        int size_channel = int(it->second.size());
+        int size_channel = int(ite->second.size());
         // percorrendo usuários
         for (int i = 0; i < size_channel; i++)
         {
-            if (token == it->second[i])
+            if (token == ite->second[i])
             {
-                return it->first;
+                return ite->first;
             }
         }
-        it++;
+        ite++;
     }
     return "???";
 }
 
 bool remove_user_from_channel(int token, string chan, int* client_socket, int max_clients){
-    std::map<std::string, vector<int>>::iterator it = channels.begin();
+    std::map<std::string, vector<int>>::iterator ite = channels.begin();
     // percorrendo os canais
-    while (it != channels.end())
+    while (ite != channels.end())
     {
-        int size_channel = int(it->second.size());
+        int size_channel = int(ite->second.size());
         // percorrendo usuários
         for (int i = 0; i < size_channel; i++)
         {
-            if (token == it->second[i])
+            if (token == ite->second[i])
             {
                 // tentando remover do mesmo canal e entrar no mesmo canal 
-                // if (it->first == chan){
+                // if (ite->first == chan){
                 //     return false;
                 // }
                 // string origin = SERVER;
-                // string response = origin + " channel : " + it->first + ", left by : " + users[it->second[i]].first; 
+                // string response = origin + " channel : " + ite->first + ", left by : " + users[ite->second[i]].first; 
                 
                 // removendo o elemento do canal
-                it->second.erase(it->second.begin() + i);
+                ite->second.erase(ite->second.begin() + i);
                 
                 // char *tmp = str_to_charA(response, 1 + response.length());
                 // send_to_all(client_socket, max_clients, tmp, 1 + response.length());
                 return true;
             }
         }
-        it++;
+        ite++;
     }
     return false;
 }
+
+int find_token_by_name(string user_name){
+    map<int, pair<string, int>>::iterator ite = users.begin();
+    // iterando em relação aos usuários
+    while (ite != users.end() )
+    {
+        if (ite->second.first.compare(0, user_name.size(),user_name)  == 0)
+            return ite->first;   
+        ite ++;
+    }
+    return -1;
+}
+
+
+
+
+string check_if_admin(int token, bool *isAdm){
+    std::map<std::string, vector<int>>::iterator ite = channels.begin();
+    
+    while (ite != channels.end())
+    {
+        if (ite->second.size() > 0 && ite->second[0] == token)
+        {
+            (*isAdm) = true; 
+            return ite->first;
+        }
+        ite ++;
+    }
+    (*isAdm) = false;
+    return "";
+}
+
 
 
 /* Para enviar o token do usuário pela mensagem precisamos de um tamanho padrão */
@@ -240,8 +272,10 @@ int main(int argc, char *argv[]) {
                 //colocando o primeiro caracter para identificação do cliente 
                 char buffer[size_message + size_token + 1];
                 valread = read(sd, buffer, size_message + size_token + 1);
+                cout <<"buffer : " << buffer << endl;
                 buffer[valread] = '\0'; 
                 string buffer_str = &buffer[1 + size_token];
+                
 
                 if(valread == 0) {
                     //Alguém se desconectou, procura por suas informações e as imprime  
@@ -262,12 +296,14 @@ int main(int argc, char *argv[]) {
                     client_socket[i] = 0;
                 }
 
+                
                 //transmite a mensagem recebida 
                 else {
                     string tokenClient (buffer, size_token);    //token do cliente no formato de string
                     string username;
                     char op_code = buffer[size_token];          //código da operação requisitada
                     int token = stoi(tokenClient);
+                    cout << "op_code : " << op_code << endl;
 
                     if(op_code == FLAG_CHANGE_USERNAME[0]) {
                         bool find = false;
@@ -333,6 +369,48 @@ int main(int argc, char *argv[]) {
                         send_to_all(client_socket, max_clients, tmp, 1 + response.length());
                         free(tmp);
                         
+                        
+                    }
+                    // comando para se kickar uma pessoa
+                    else if(op_code == FLAG_KICK[0]){
+                        bool isAdm = false;
+                        cout << "HERE 0" << endl;
+                        string adm_channel = check_if_admin(token, &isAdm);
+                        cout << "HERE 1" << endl;
+                        int token_to_remove = find_token_by_name(buffer_str);
+                        cout << "HERE 2" << endl;
+
+                        string channel_user_to_remove = find_channel(token_to_remove);
+                        cout << "HERE 3" << endl;
+                        cout << "isAdm : "<< isAdm << endl;
+                        cout << "adm_channel : "<< adm_channel << endl;
+                        cout << "token_to_remove : "<< token_to_remove << endl;
+                        cout << "channel_user_to_remove : "<< channel_user_to_remove << endl;
+
+                        if (isAdm && token_to_remove != -1 && channel_user_to_remove.compare(adm_channel)  == 0)
+                        {
+                            remove_user_from_channel(token_to_remove,adm_channel,client_socket, max_clients);
+                            string origin = SERVER;
+                            response = origin + "\033[1;31mChannel : " + adm_channel + ", kicked : " + buffer_str + "\033[0m \033[0m";
+                            char *tmp = str_to_charA(response, 1 + response.length());
+                            send_to_all(client_socket, max_clients, tmp, 1 + response.length());
+                        }
+                        else if( !isAdm){ // induvíduo nao eh adm
+
+                            string origin = SERVER;
+                            response = origin + "\033[1;31mPERMISSION DENIED,YOU ARE NOT THE ADM  ! \033[0m";
+                            char *tmp = str_to_charA(response, 1 + response.length());
+                            send(sd, tmp, response.size() + 1, 0);              
+                        }
+                        else{   // nao foi encontrado o usuário a ser removido
+                            
+                            string origin = SERVER;
+                            response = origin + "\033[1;33mUser not found in your channel! \033[0m";
+                            char *tmp = str_to_charA(response, 1 + response.length());
+                            send(sd, tmp, response.size() + 1, 0);              
+                        }
+                        
+                            
                         
                     }
                     else if(op_code == FLAG_COMPLETE[0]) {

@@ -53,6 +53,7 @@ int check_command(string command) {
     if(command.compare(0, 5, "/quit") == 0) return 2;
     if(command.compare(0, 5, "/ping") == 0) return 3;
     if(command.compare(0, 5, "/join") == 0) return 4;
+    if(command.compare(0, 5, "/kick") == 0) return 5;
 
     return 0;
 }
@@ -77,7 +78,6 @@ string choose_username(int server_socket) {
     char response;
     int valread;
 
-    getchar();
 
     while(!valid_username) {
         print_name("System","yellow");
@@ -129,12 +129,11 @@ bool check_valid_channel(string channelAux){
     return true;
 }
 
-void define_channel(int server_socket, string channelAux){
+void define_channel(int server_socket, string channelAux1){
     
-    
-    channel = "#" + channelAux;
+    channel = "#" + channelAux1;
     string token_s = fill_nickname();
-    channelAux = token_s + channel;
+    string channelAux = token_s + channel;
 
     char* request = str_to_charA(channelAux, channelAux.length() + size_token + 1);
     
@@ -144,6 +143,23 @@ void define_channel(int server_socket, string channelAux){
     cout << "connecting... " << endl;
     free(request);
         
+}
+
+void kick_user(int server_socket, string userToKick){
+
+    string message = "k" + userToKick;
+    string token_s = fill_nickname();
+    message = token_s + message;
+    cout << " message  :" << message << endl;
+    char* request = str_to_charA(message, message.length() + size_token + 1);
+    
+    send(server_socket, request, message.length() + size_token + 1, 0);
+
+    print_name("System","green");
+    cout << "kicking... " << endl;
+    free(request);
+
+
 }
 
 
@@ -247,7 +263,12 @@ void send_message(int server_socket) {
         if(flag_command == 4){
             check_valid_channel(message.substr(6));
             define_channel(server_socket, message.substr(6));
-        }else{
+        }
+        if(flag_command == 5){
+            kick_user(server_socket, message.substr(6));
+        }
+
+        if( flag_command != 4 && flag_command != 5 ){
             memset(request, 0, size_token + tmp_message.length() + 1);
             message.clear();
             tmp_message.clear();
@@ -326,7 +347,7 @@ int main(int argc, char const *argv[]) {
 
     do {
         print_name("User", "yellow");
-        cin >> command;
+        getline(cin, command);
         op_code = check_command(command);
         if(op_code == 0) {
             print_name("System", "red");
@@ -358,7 +379,7 @@ int main(int argc, char const *argv[]) {
         if(op_code == 2) return QUIT;
         if (op_code == 4)
         {
-            if (command.size() >= 6)
+            if (command.size() > 6)
             {
                 channelAux = command.substr(6);
                 channelChecker = true;
