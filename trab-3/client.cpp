@@ -119,23 +119,19 @@ string choose_username(int server_socket) {
 }
 
 
-void define_channel(int server_socket){
-    
-    string channelAux; 
-    bool validChannel = true;
-    print_name("System", "yellow");
-    cout << "Entre com o nome do canal" << endl;
-    do {
-        validChannel = true;
-        print_name("User","yellow");
-        getline(cin,channelAux);
-        if (channelAux.length() > 49 || channelAux.find('[') != std::string::npos)
+bool check_valid_channel(string channelAux){
+    if (channelAux.length() > 49 || channelAux.find('[') != std::string::npos)
         {
             print_name("System","red");
             cout << "invalid input" << endl;
-            validChannel = false;
+            return false;
         }
-    }while(! validChannel);
+    return true;
+}
+
+void define_channel(int server_socket, string channelAux){
+    
+    
     channel = "#" + channelAux;
     string token_s = fill_nickname();
     channelAux = token_s + channel;
@@ -149,6 +145,7 @@ void define_channel(int server_socket){
     free(request);
         
 }
+
 
 int socket_init() {
     int server_socket = 0;
@@ -248,7 +245,8 @@ void send_message(int server_socket) {
         }
         // caso comando seja /join
         if(flag_command == 4){
-            define_channel(server_socket);
+            check_valid_channel(message.substr(6));
+            define_channel(server_socket, message.substr(6));
         }else{
             memset(request, 0, size_token + tmp_message.length() + 1);
             message.clear();
@@ -347,18 +345,39 @@ int main(int argc, char const *argv[]) {
     cout << " - para entrar em um canal. " << endl;
     print_text("/quit","blue", false);
     cout << " - para sair. " << endl;
+    string channelAux;
+    bool channelChecker = false;
     do {
         print_name("User", "yellow");
-        cin >> command;
+        getline(cin, command);
         op_code = check_command(command);
         if(op_code == 0) {
             print_name("System", "red");
             cout << "Command not found" << endl;
         }
         if(op_code == 2) return QUIT;
-    } while(op_code != 4);
-    getchar();
-    define_channel(sock);
+        if (op_code == 4)
+        {
+            if (command.size() >= 6)
+            {
+                channelAux = command.substr(6);
+                channelChecker = true;
+                if (! check_valid_channel(channelAux)){
+                    print_name("System", "red");
+                    cout << "invalid channel" << endl;
+                    channelChecker = false;
+                }
+            }
+            else {
+                print_name("System", "red");
+                cout << "channel not defined" << endl;
+            }
+            
+            
+        }
+        
+    } while(op_code != 4 || !channelChecker);
+    define_channel(sock, channelAux);
 
 
     
