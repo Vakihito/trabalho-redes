@@ -413,6 +413,8 @@ int main(int argc, char *argv[]) {
                             
                         
                     }
+                    
+                    
                     else if(op_code == FLAG_COMPLETE[0]) {
                         cache[token] += buffer_str;
                         cout << cache[token] << endl;

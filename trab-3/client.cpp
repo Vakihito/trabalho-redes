@@ -54,6 +54,7 @@ int check_command(string command) {
     if(command.compare(0, 5, "/ping") == 0) return 3;
     if(command.compare(0, 5, "/join") == 0) return 4;
     if(command.compare(0, 5, "/kick") == 0) return 5;
+    if(command.compare(0, 5, "/mute") == 0) return 6;
 
     return 0;
 }
@@ -150,7 +151,22 @@ void kick_user(int server_socket, string userToKick){
     string message = "k" + userToKick;
     string token_s = fill_nickname();
     message = token_s + message;
-    cout << " message  :" << message << endl;
+    // cout << " message  :" << message << endl;
+    char* request = str_to_charA(message, message.length() + size_token + 1);
+    
+    send(server_socket, request, message.length() + size_token + 1, 0);
+
+    print_name("System","green");
+    cout << "kicking... " << endl;
+    free(request);
+}
+
+void mute_user(int server_socket, string userToKick){
+
+    string message = "m" + userToKick;
+    string token_s = fill_nickname();
+    message = token_s + message;
+    // cout << " message  :" << message << endl;
     char* request = str_to_charA(message, message.length() + size_token + 1);
     
     send(server_socket, request, message.length() + size_token + 1, 0);
@@ -259,21 +275,26 @@ void send_message(int server_socket) {
             request = str_to_charA(str_request,str_request.length());  //converte o formato para vetor de caracteres
             send(server_socket, request, size_token + 1, 0);              //envia a requisição ao servidor
         }
-        // caso comando seja /join
-        if(flag_command == 4){
-            check_valid_channel(message.substr(6));
-            define_channel(server_socket, message.substr(6));
+        switch (flag_command)
+        {
+            case 4:
+                check_valid_channel(message.substr(6));
+                define_channel(server_socket, message.substr(6));
+                break;
+            case 5:
+                kick_user(server_socket, message.substr(6));
+                break;
+            case 6:
+                mute_user(server_socket, message.substr(6));
+                break;
+            default:
+                memset(request, 0, size_token + tmp_message.length() + 1);
+                message.clear();
+                tmp_message.clear();
+                free(request);
+                break;
         }
-        if(flag_command == 5){
-            kick_user(server_socket, message.substr(6));
-        }
-
-        if( flag_command != 4 && flag_command != 5 ){
-            memset(request, 0, size_token + tmp_message.length() + 1);
-            message.clear();
-            tmp_message.clear();
-            free(request);
-        }
+            
 
         
     }
