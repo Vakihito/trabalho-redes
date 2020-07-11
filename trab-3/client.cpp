@@ -55,6 +55,8 @@ int check_command(string command) {
     if(command.compare(0, 5, "/join") == 0) return 4;
     if(command.compare(0, 5, "/kick") == 0) return 5;
     if(command.compare(0, 5, "/mute") == 0) return 6;
+    if(command.compare(0, 7, "/unmute") == 0) return 7;
+
 
     return 0;
 }
@@ -121,7 +123,7 @@ string choose_username(int server_socket) {
 
 
 bool check_valid_channel(string channelAux){
-    if (channelAux.length() > 49 || channelAux.find('[') != std::string::npos)
+    if (channelAux.length() < 1 || channelAux.length() > 49 || channelAux.find('[') != std::string::npos)
         {
             print_name("System","red");
             cout << "invalid input" << endl;
@@ -132,9 +134,10 @@ bool check_valid_channel(string channelAux){
 
 void define_channel(int server_socket, string channelAux1){
     
-    channel = "#" + channelAux1;
+    channel = FLAG_CHANNEL + channelAux1;
     string token_s = fill_nickname();
     string channelAux = token_s + channel;
+    cout << " message  :" << channelAux << endl;
 
     char* request = str_to_charA(channelAux, channelAux.length() + size_token + 1);
     
@@ -143,15 +146,14 @@ void define_channel(int server_socket, string channelAux1){
     print_name("System","green");
     cout << "connecting... " << endl;
     free(request);
-        
 }
 
 void kick_user(int server_socket, string userToKick){
 
-    string message = "k" + userToKick;
+    string message = FLAG_KICK + userToKick;
     string token_s = fill_nickname();
     message = token_s + message;
-    // cout << " message  :" << message << endl;
+    cout << " message  :" << message << endl;
     char* request = str_to_charA(message, message.length() + size_token + 1);
     
     send(server_socket, request, message.length() + size_token + 1, 0);
@@ -161,21 +163,34 @@ void kick_user(int server_socket, string userToKick){
     free(request);
 }
 
-void mute_user(int server_socket, string userToKick){
+void mute_user(int server_socket, string userToMute){
 
-    string message = "m" + userToKick;
+    string message = FLAG_MUTE + userToMute;
+    // cout << " message  :" << message << endl;
+
     string token_s = fill_nickname();
     message = token_s + message;
-    // cout << " message  :" << message << endl;
+    cout << " message  :" << message << endl;
     char* request = str_to_charA(message, message.length() + size_token + 1);
-    
     send(server_socket, request, message.length() + size_token + 1, 0);
-
     print_name("System","green");
-    cout << "kicking... " << endl;
+    cout << "Muting... " << endl;
     free(request);
+}
 
+void unmute_user(int server_socket, string userToUnmute){
 
+    string message = FLAG_UNMUTE + userToUnmute;
+    // cout << " message  :" << message << endl;
+    
+    string token_s = fill_nickname();
+    message = token_s + message;
+    cout << " message  :" << message << endl;
+    char* request = str_to_charA(message, message.length() + size_token + 1);
+    send(server_socket, request, message.length() + size_token + 1, 0);
+    print_name("System","green");
+    cout << "Unmuting... " << endl;
+    free(request);
 }
 
 
@@ -249,7 +264,7 @@ void send_message(int server_socket) {
             message ="/quit";
         
         flag_command = check_command(message);  //avalia se a mensagem corresponde a algum comando da aplicação
-        str_request = to_string(token);         //insere o token na requisição
+        str_request = fill_nickname();         //insere o token na requisição
 
         // envio de mensagem comum
         if(flag_command == 0) {
@@ -268,13 +283,14 @@ void send_message(int server_socket) {
             for(int i = size_token + tmp_message.length() + 1; i < size_message; ++i) request[i] = '\0';
             send(server_socket, request, tmp_message.length() + size_token + 1, 0);
         }
-        else if (flag_command != 4) {
+        else if (flag_command == 2 || flag_command == 3) {
             if(flag_command == 2) op_code = FLAG_EXIT;        // envio de desconexão com o servidor
             else if(flag_command == 3) op_code = FLAG_PING;   // envio do comando "/ping"                                          
             str_request = str_request + op_code;                       //insere o código da operação e a mensagem          
             request = str_to_charA(str_request,str_request.length());  //converte o formato para vetor de caracteres
             send(server_socket, request, size_token + 1, 0);              //envia a requisição ao servidor
         }
+        
         switch (flag_command)
         {
             case 4:
@@ -287,14 +303,18 @@ void send_message(int server_socket) {
             case 6:
                 mute_user(server_socket, message.substr(6));
                 break;
+            case 7:
+                unmute_user(server_socket, message.substr(8));
+                break;
             default:
                 memset(request, 0, size_token + tmp_message.length() + 1);
-                message.clear();
                 tmp_message.clear();
+                message.clear();
                 free(request);
                 break;
         }
-            
+        
+
 
         
     }
@@ -334,8 +354,8 @@ void receive_message(int server_socket) {
             print_name("Server","green");  
             cout << message << endl;
         }
-
         free(tmp_buffer);
+
     }
 
     return;
