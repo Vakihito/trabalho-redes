@@ -334,7 +334,7 @@ int main(int argc, char *argv[]) {
                 //colocando o primeiro caracter para identificação do cliente 
                 char buffer[size_message + size_token + 1];
                 valread = read(sd, buffer, size_message + size_token + 1);
-                cout <<"\nbuffer : " << buffer << endl;
+                // cout <<"\nbuffer : " << buffer << endl;
                 buffer[valread] = '\0'; 
                 string buffer_str = &buffer[1 + size_token];
                 
@@ -365,7 +365,7 @@ int main(int argc, char *argv[]) {
                     string username;
                     char op_code = buffer[size_token];          //código da operação requisitada
                     int token = stoi(tokenClient);
-                    cout << "\nop_code : " << op_code << endl;
+                    // cout << "\nop_code : " << op_code << endl;
 
                     if(op_code == FLAG_CHANGE_USERNAME[0]) {
                         bool find = false;
@@ -483,7 +483,6 @@ int main(int argc, char *argv[]) {
                     // comando para se mutar uma pessoa
                     else if(op_code == FLAG_MUTE[0]){
                         cout << "/mute " << buffer_str << endl;
-                        cout << "users[token].first + cache[token] : |" << users[token].first + cache[token] << "|" << endl;
 
                         bool isAdm = false;
                         string adm_channel = check_if_admin(token, &isAdm);

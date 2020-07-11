@@ -137,7 +137,7 @@ void define_channel(int server_socket, string channelAux1){
     channel = FLAG_CHANNEL + channelAux1;
     string token_s = fill_nickname();
     string channelAux = token_s + channel;
-    cout << " message  :" << channelAux << endl;
+    // cout << " message  :" << channelAux << endl;
 
     char* request = str_to_charA(channelAux, channelAux.length() + size_token + 1);
     
@@ -153,7 +153,7 @@ void kick_user(int server_socket, string userToKick){
     string message = FLAG_KICK + userToKick;
     string token_s = fill_nickname();
     message = token_s + message;
-    cout << " message  :" << message << endl;
+    // cout << " message  :" << message << endl;
     char* request = str_to_charA(message, message.length() + size_token + 1);
     
     send(server_socket, request, message.length() + size_token + 1, 0);
@@ -170,7 +170,7 @@ void mute_user(int server_socket, string userToMute){
 
     string token_s = fill_nickname();
     message = token_s + message;
-    cout << " message  :" << message << endl;
+    // cout << " message  :" << message << endl;
     char* request = str_to_charA(message, message.length() + size_token + 1);
     send(server_socket, request, message.length() + size_token + 1, 0);
     print_name("System","green");
