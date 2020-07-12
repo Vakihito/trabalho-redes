@@ -185,7 +185,7 @@ void unmute_user(int server_socket, string userToUnmute){
     
     string token_s = fill_nickname();
     message = token_s + message;
-    cout << " message  :" << message << endl;
+    // cout << " message  :" << message << endl;
     char* request = str_to_charA(message, message.length() + size_token + 1);
     send(server_socket, request, message.length() + size_token + 1, 0);
     print_name("System","green");

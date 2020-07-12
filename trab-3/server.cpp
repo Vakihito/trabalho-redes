@@ -142,13 +142,7 @@ bool remove_user_from_channel(int token, string chan, int* client_socket, int ma
 
 
 string clear_name(string namecmp){
-    int i = 0;
-    string retorno = "";
-    while (isalnum(namecmp[i])){
-        retorno += namecmp[i];
-        i++;
-    }
-    return retorno;
+    return namecmp.substr(0,namecmp.find('\0'));
 }
 
 // esta errado.
@@ -393,7 +387,7 @@ int main(int argc, char *argv[]) {
                     
                     username = users[token].first;
                     //procura e imprime o nome do usuário
-                    print_name(username, "green");
+                    print_name(clear_name(username), "green");
 
                     //executa a operação correspondente à solicitação do cliente
                     string response = "";       
@@ -403,7 +397,6 @@ int main(int argc, char *argv[]) {
                     }
                     // commando para criar/entrar em um canal
                     else if(op_code == FLAG_CHANNEL[0]) {
-                        cout << "/join " << buffer_str << endl;
                         // o canal ainda não existia
                         string responseAux = "";
                         string origin = SERVER;
@@ -514,7 +507,7 @@ int main(int argc, char *argv[]) {
                         }
                         else if( check_if_mute_already_on){
                             string origin = SERVER;
-                            response = origin + " ", "the user : " + buffer_str + "is already muted. ";
+                            response = origin + "\033[1;33m" + "The user : " + buffer_str + " is already muted. \033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
                             send(sd, tmp, response.size() + 1, 0);
                             free(tmp);
@@ -534,10 +527,19 @@ int main(int argc, char *argv[]) {
 
 
                         bool isAdm = false;
+                        // cout << "here " << endl;
                         string adm_channel = check_if_admin(token, &isAdm);
+                        // cout << "here 1" << endl;
+
                         int token_to_unmute = find_token_by_name(buffer_str);
+                        // cout << "here 2" << endl;
+
                         string channel_user_to_remove = find_channel(token_to_unmute);
+                        // cout << "here 3" << endl;
+
                         bool check_if_mute_already_on = check_if_already_mute(token_to_unmute, adm_channel);
+                        // cout << "here 4" << endl;
+                        
                         if (isAdm && token_to_unmute != -1 && channel_user_to_remove.compare(adm_channel)  == 0
                         && check_if_mute_already_on)
                         {
@@ -549,6 +551,8 @@ int main(int argc, char *argv[]) {
                             send_to_all(client_socket, max_clients, tmp, 1 + response.length());
                         }
                         else if( !isAdm){ // induvíduo nao eh adm
+                            // cout << "here 6" << endl;
+
                             string origin = SERVER;
                             response = origin + "\033[1;31mPERMISSION DENIED,YOU ARE NOT THE ADM  ! \033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
@@ -556,13 +560,16 @@ int main(int argc, char *argv[]) {
                             free(tmp);           
                         }
                         else if( !check_if_mute_already_on){
+                            // cout << "here 7" << endl;
+
                             string origin = SERVER;
-                            response = origin + " ", "the user : " + buffer_str + "is already unmuted. ";
+                            response = origin + "\033[1;33m" + "The user : " + buffer_str + " is already unmuted. " + "\033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
                             send(sd, tmp, response.size() + 1, 0);
                             free(tmp);
                         }
                         else{   // nao foi encontrado o usuário a ser removido
+                            // cout << "here 5" << endl;
                             
                             string origin = SERVER;
                             response = origin + "\033[1;33mUser not found in your channel! \033[0m";
@@ -570,11 +577,9 @@ int main(int argc, char *argv[]) {
                             send(sd, tmp, response.size() + 1, 0);
                             free(tmp);              
                         } 
+                        
                     }
-                    
-                    
-                    
-
+                    // mensagem completa
                     else if(op_code == FLAG_COMPLETE[0]) {
                         cache[token] += buffer_str;
                         cout << cache[token] << endl;
@@ -620,6 +625,7 @@ int main(int argc, char *argv[]) {
                         send_to_all(client_socket, max_clients, tmp, 1 + size_message);
                         free(tmp);
                     }
+                    response.clear();
                 }
             } 
         }
