@@ -50,13 +50,13 @@ int kbhit(void) {
 
 int check_command(string command) {
     if(command.compare(0, 8,"/connect") == 0) return 1;
-    if(command.compare(0, 5, "/quit") == 0) return 2;
-    if(command.compare(0, 5, "/ping") == 0) return 3;
-    if(command.compare(0, 5, "/join") == 0) return 4;
-    if(command.compare(0, 5, "/kick") == 0) return 5;
-    if(command.compare(0, 5, "/mute") == 0) return 6;
-    if(command.compare(0, 7, "/unmute") == 0) return 7;
-
+    else if(command.compare(0, 5, "/quit") == 0) return 2;
+    else if(command.compare(0, 5, "/ping") == 0) return 3;
+    else if(command.compare(0, 5, "/join") == 0) return 4;
+    else if(command.compare(0, 5, "/kick") == 0) return 5;
+    else if(command.compare(0, 5, "/mute") == 0) return 6;
+    else if(command.compare(0, 7, "/unmute") == 0) return 7;
+    else if(command.compare(0, 7, "/invite") == 0) return 8;
 
     return 0;
 }
@@ -193,6 +193,21 @@ void unmute_user(int server_socket, string userToUnmute){
     free(request);
 }
 
+void invite_user(int server_socket, string userToInvite){
+
+    string message = FLAG_INVITE + userToInvite;
+    // cout << " message  :" << message << endl;
+
+    string token_s = fill_nickname();
+    message = token_s + message;
+    // cout << " message  :" << message << endl;
+    char* request = str_to_charA(message, message.length() + size_token + 1);
+    send(server_socket, request, message.length() + size_token + 1, 0);
+    print_name("System","green");
+    cout << "Inviting... " << endl;
+    free(request);
+}
+
 
 int socket_init() {
     int server_socket = 0;
@@ -305,6 +320,9 @@ void send_message(int server_socket) {
                 break;
             case 7:
                 unmute_user(server_socket, message.substr(8));
+                break;
+            case 8:
+                invite_user(server_socket, message.substr(8));
                 break;
             default:
                 memset(request, 0, size_token + tmp_message.length() + 1);

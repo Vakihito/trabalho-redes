@@ -12,6 +12,7 @@ using namespace std;
 #define FLAG_KICK "k"               //instrução de kick de um usuário
 #define FLAG_MUTE "m"               //instrução de mutar de um usuário
 #define FLAG_UNMUTE "n"               //instrução de unmutar de um usuário
+#define FLAG_INVITE "v"               //instrução de unmutar de um usuário
 #define FLAG_CHANGE_USERNAME "u"    //trocar username
 
 //códigos presentes na resposta do servidor para os usuários

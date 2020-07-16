@@ -22,6 +22,7 @@ using namespace std;
 map<int, pair<string, int>> users;          // <token, <nome, socket>>
 map<string, vector<int>> channels;          //  <channel , < tokens > >;
 map<int, vector<string>> mutes;                     //  <tokens  , channel >; guarda em um mapa quais são os usuários mutados
+map<int, vector<string>> invites;                     //  <tokens  , channel >; guarda em um mapa os invites recebidos por um usuario
 map<int, pair<string, int>>::iterator it;   // iterador para busca dos usuários
 map<int, string> cache;
 
@@ -129,6 +130,12 @@ bool remove_user_from_channel(int token, string chan, int* client_socket, int ma
                 
                 // removendo o elemento do canal
                 ite->second.erase(ite->second.begin() + i);
+                // se o canal estiver vasio simplesmente apague-o
+                if (ite->second.empty())
+                {
+                    channels.erase(ite);
+                }
+                
                 
                 // char *tmp = str_to_charA(response, 1 + response.length());
                 // send_to_all(client_socket, max_clients, tmp, 1 + response.length());
@@ -174,6 +181,15 @@ void remove_from_mute(int token_to_remove ,string chan){
     
 }
 
+bool check_if_already_invited (string chan, int token_to_invite ){
+    vector <string> channels_invited = invites[token_to_invite];
+    int size_vet_channelsi = int(channels_invited.size());
+    for (int i = 0; i < size_vet_channelsi; i++)
+        if (channels_invited[i].size() > 0 && channels_invited[i].compare(chan) == 0)
+            return true;
+    
+    return false;
+}
 
 
 
@@ -401,29 +417,47 @@ int main(int argc, char *argv[]) {
                         string responseAux = "";
                         string origin = SERVER;
                         // se um usuário sair e entar no mesmo canal ele vira o último da fila
-                        remove_user_from_channel(token,buffer_str,client_socket, max_clients);
-
+                        bool check_if_invited = check_if_already_invited(buffer_str, token);
+                        cout << "check_if_invited : " << check_if_invited << endl;
                         if (channels.find(buffer_str) == channels.end())
                         {
+                            remove_user_from_channel(token,buffer_str,client_socket, max_clients);
                             // cria o vector e insere no canal
                             vector <int> users_channel = {token};
                             channels[buffer_str] = users_channel;
                             // enviando mensagem de resposta
                             responseAux = "channel : " + buffer_str + ", created by " + users[token].first;
-                            response = origin + "channel : " + buffer_str + ", created by " + users[token].first; 
-                        }else{
+                            response = origin + "channel : " + buffer_str + ", created by " + users[token].first;
+                            cout  << responseAux << endl;
+                            response = origin + responseAux;
+                            char *tmp = str_to_charA(response, 1 + response.length());
+                            send_to_all(client_socket, max_clients, tmp, 1 + response.length());
+                            free(tmp);
+
+                        }
+                        else if(!check_if_invited){
+                            cout << " entrei aqui " << endl;
+                            string origin = SERVER;
+                            response = origin + "\033[1;31mYOU WERE NOT INVITED !\033[0m";
+                            char *tmp = str_to_charA(response, 1 + response.length());
+                            send(sd, tmp, response.size() + 1, 0);   
+                            free(tmp);  
+                        }
+                        else{
+                            remove_user_from_channel(token,buffer_str,client_socket, max_clients);
                             // insere no canal
                             // cout << "entrei aqui 4" << endl;
                             channels[buffer_str].push_back(token);
                             responseAux = "channel : " + buffer_str + ", joined by : " + users[token].first;
-                            response = origin + "channel : " + buffer_str + ", joined by : " + users[token].first;  
+                            response = origin + "channel : " + buffer_str + ", joined by : " + users[token].first;
+                            cout  << responseAux << endl;
+                            response = origin + responseAux;
+                            char *tmp = str_to_charA(response, 1 + response.length());
+                            send_to_all(client_socket, max_clients, tmp, 1 + response.length());
+                            free(tmp);
                         // cout << "entrei aqui 5" << endl;
                         }
-                        cout  << responseAux << endl;
-                        response = origin + responseAux;
-                        char *tmp = str_to_charA(response, 1 + response.length());
-                        send_to_all(client_socket, max_clients, tmp, 1 + response.length());
-                        free(tmp);
+                        
                         
                         
                     }
@@ -567,6 +601,64 @@ int main(int argc, char *argv[]) {
                             char *tmp = str_to_charA(response, 1 + response.length());
                             send(sd, tmp, response.size() + 1, 0);
                             free(tmp);
+                        }
+                        else{   // nao foi encontrado o usuário a ser removido
+                            // cout << "here 5" << endl;
+                            
+                            string origin = SERVER;
+                            response = origin + "\033[1;33mUser not found in your channel! \033[0m";
+                            char *tmp = str_to_charA(response, 1 + response.length());
+                            send(sd, tmp, response.size() + 1, 0);
+                            free(tmp);              
+                        } 
+                        
+                    }
+                    
+                    else if(op_code == FLAG_INVITE[0]){
+                        cout << "/invite " << buffer_str << endl;
+
+
+                        bool isAdm = false;
+                        string adm_channel = check_if_admin(token, &isAdm);
+                        // cout << "here 1" << endl;
+
+                        int token_to_invite = find_token_by_name(buffer_str);
+                        // cout << "here 2" << endl;
+                        bool check_already_invited = check_if_already_invited(adm_channel, token_to_invite);
+
+                        
+                        if (isAdm && token_to_invite != -1 &&  !check_already_invited)
+                        {
+                            // se o usuario nao tiver nenhum invite cria o vetor de invites para ele
+                            if (invites[token_to_invite].empty())
+                            {
+                                vector <string> invites_to_create;
+                                invites[token_to_invite] = invites_to_create;
+                            }
+                            
+                            invites[token_to_invite].push_back(adm_channel);
+
+                            string origin = SERVER;
+                            response = origin + "\033[1;34mChannel : " + adm_channel + ", invited : " + buffer_str + "\033[0m";
+                            char *tmp = str_to_charA(response, 1 + response.length());
+                            send_to_all(client_socket, max_clients, tmp, 1 + response.length());
+                        }
+                        else if( !isAdm){ // induvíduo nao eh adm
+                            // cout << "here 6" << endl;
+
+                            string origin = SERVER;
+                            response = origin + "\033[1;31mPERMISSION DENIED,YOU ARE NOT THE ADM  ! \033[0m";
+                            char *tmp = str_to_charA(response, 1 + response.length());
+                            send(sd, tmp, response.size() + 1, 0);   
+                            free(tmp);           
+                        }
+                        else if (check_already_invited)
+                        {
+                            string origin = SERVER;
+                            response = origin + "\033[1;31mTHE USER HAS ALREADY BEEN INVITED \033[0m";
+                            char *tmp = str_to_charA(response, 1 + response.length());
+                            send(sd, tmp, response.size() + 1, 0);   
+                            free(tmp);  
                         }
                         else{   // nao foi encontrado o usuário a ser removido
                             // cout << "here 5" << endl;
