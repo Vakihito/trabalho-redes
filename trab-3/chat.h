@@ -11,15 +11,19 @@ using namespace std;
 #define FLAG_PING "p"               //instrução "ping-pong"
 #define FLAG_KICK "k"               //instrução de kick de um usuário
 #define FLAG_MUTE "m"               //instrução de mutar de um usuário
-#define FLAG_UNMUTE "n"               //instrução de unmutar de um usuário
-#define FLAG_INVITE "v"               //instrução de unmutar de um usuário
+#define FLAG_UNMUTE "n"             //instrução de desmutar de um usuário
+#define FLAG_WHOIS "w"              //instrução para identificar o ip de um usuário
 #define FLAG_CHANGE_USERNAME "u"    //trocar username
+#define FLAG_LEAVE "l"              //instrução para desconectar de um canal 
+#define FLAG_INVITE "I"             //instrução para convidar um usuário para um canal
+#define FLAG_MODE "M"               //instrução para alterar as propriedades de um canal/usuário 
 
 //códigos presentes na resposta do servidor para os usuários
 #define INVALID_USERNAME 'r'  //nome de usuário repetido
 #define VALID_USERNAME 'a'    //nome de usuário aceito
 #define SERVER "s"            //mensagem enviada pelo servidor
-#define CLIENT "c"            //mensagem enviada por um cliente         
+#define CLIENT "c"            //mensagem enviada por um cliente  
+#define DISCONNECTED "d"      //usuário removido do canal       
 
 //constantes utilizadas para a construção e processamento das requisições dos usuários
 #define PORT 8888            // número da porta de comunicação
