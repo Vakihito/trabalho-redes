@@ -74,11 +74,9 @@ bool check_if_already_mute(int token, string chan ){
     return false;
 }
 
+void send_to_channel(int client_socket[], int max_clients, char *message, int _size_message, string chan, int token_sender, bool isCommand = false) {
 
-
-void send_to_channel(int client_socket[], int max_clients, char *message, int _size_message, string chan, int token_sender) {
-
-    if(check_if_already_mute(token_sender, chan)) {
+    if(!isCommand && check_if_already_mute(token_sender, chan)) {
         string origin = SERVER;
         string response = origin + "\033[1;31mYou are muted!\033[0m";
         char *tmp = str_to_charA(response, 1 + response.length());
@@ -88,7 +86,7 @@ void send_to_channel(int client_socket[], int max_clients, char *message, int _s
         
     int size_channel = int(channels[chan].size());
     // percorrendo usuários do canal
-    for (int i = 0; i <  size_channel; i++){
+    for (int i = 0; i < size_channel; i++){
         send(users[channels[chan][i]].second, message, _size_message, 0);
     }
 }
@@ -120,8 +118,7 @@ bool remove_user_from_channel(int token, string chan){
                 // removendo o elemento do canal
                 ite->second.erase(ite->second.begin() + i);
                 // caso o canal esteja vazio simplesmente elimine-o tambem elimine seu status
-                if (ite->second.empty())
-                {
+                if (ite->second.empty()) {
                     channels.erase(ite);
                     channel_status.erase(ite->first);
                 }
@@ -217,7 +214,7 @@ int main(int argc, char *argv[]) {
     }
 
     //set master socket to allow multiple connections, this is just a good habit, it will work without this  
-    if( setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0 ) {
+    if(setsockopt(master_socket, SOL_SOCKET, SO_REUSEADDR, (char *)&opt, sizeof(opt)) < 0) {
         perror("setsockopt");
         exit(EXIT_FAILURE);
     }
@@ -383,19 +380,19 @@ int main(int argc, char *argv[]) {
                     string response = ""; 
 
                     //mensagem comum
-                    if(op_code == FLAG_INCOMPLETE[0]) {
+                    if(op_code == FLAG_INCOMPLETE[0]){
                         cache[token] += buffer_str;
                     }
 
                     // commando para criar/entrar em um canal
-                    else if(op_code == FLAG_CHANNEL[0]) {
+                    else if(op_code == FLAG_CHANNEL[0]){
                         // o canal ainda não existia
                         string responseAux = "";
                         string origin = SERVER;
                         // se um usuário sair e entar no mesmo canal ele vira o último da fila
                         bool check_if_invited = check_if_already_invited(buffer_str, token);
-                        if (channels.find(buffer_str) == channels.end())
-                        {
+                        if(channels.find(buffer_str) == channels.end()) {
+                            print_name(NAME, "green");
                             remove_user_from_channel(token,buffer_str);
                             // cria o vector e insere no canal
                             vector <int> users_channel = {token};
@@ -405,38 +402,31 @@ int main(int argc, char *argv[]) {
                             channel_status[buffer_str] = true;
 
                             // enviando mensagem de resposta
-                            responseAux = "channel : " + buffer_str + ", created by " + users[token].first;
-                            response = origin + "channel : " + buffer_str + ", created by " + users[token].first;
+                            responseAux = clear_name(users[token].first) + " created " + buffer_str;
+                            response = origin + "\033[1;33m" + responseAux + "\033[0m";
                             cout  << responseAux << endl;
-                            response = origin + responseAux;
                             char *tmp = str_to_charA(response, 1 + response.length());
-                            send_to_all(client_socket, max_clients, tmp, 1 + response.length());
+                            send_to_channel(client_socket, max_clients, tmp, 1 + response.length(), buffer_str, token);
                             free(tmp);
-
                         }
                         else if(!check_if_invited && !channel_status[buffer_str]){
                             string origin = SERVER;
-                            response = origin + "\033[1;31mYOU WERE NOT INVITED !\033[0m";
+                            response = origin + "\033[1;31mYOU WERE NOT INVITED!\033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
                             send(sd, tmp, response.size() + 1, 0);   
                             free(tmp);  
                         }
                         else{
                             remove_user_from_channel(token,buffer_str);
-                            // insere no canal
-                            // cout << "entrei aqui 4" << endl;
+                            print_name(NAME, "green");
                             channels[buffer_str].push_back(token);
-                            responseAux = "channel : " + buffer_str + ", joined by : " + users[token].first;
-                            response = origin + "channel : " + buffer_str + ", joined by : " + users[token].first;
+                            responseAux = clear_name(users[token].first) + " joined " + buffer_str;
+                            response = origin + "\033[1;33m" + responseAux + "\033[0m";
                             cout  << responseAux << endl;
-                            response = origin + responseAux;
                             char *tmp = str_to_charA(response, 1 + response.length());
-                            send_to_all(client_socket, max_clients, tmp, 1 + response.length());
+                            send_to_channel(client_socket, max_clients, tmp, 1 + response.length(), buffer_str, token, true);
                             free(tmp);
-                        }
-                        
-                        
-                        
+                        }                    
                     }
                     
                     // comando para kickar uma pessoa
@@ -481,7 +471,6 @@ int main(int argc, char *argv[]) {
                             send(sd, tmp, response.size() + 1, 0);    
                             free(tmp);
                         } 
-
                     }
                     
                     // comando para se mutar uma pessoa
@@ -508,9 +497,12 @@ int main(int argc, char *argv[]) {
                             }
 
                             string origin = SERVER;
-                            response = origin + "\033[1;31mChannel : " + adm_channel + ", muted : " + buffer_str + "\033[0m";
+                            response = origin + "\033[1;31m" + adm_channel + " muted " + buffer_str + "\033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
-                            send_to_all(client_socket, max_clients, tmp, 1 + response.length());
+                            int size_channel = int(channels[adm_channel].size());
+                            // percorrendo usuários do canal
+                            for (int i = 0; i < size_channel; i++)
+                                send(users[channels[adm_channel][i]].second, tmp, 1 + response.length(), 0);
                             free(tmp);
                         }
 
@@ -523,7 +515,7 @@ int main(int argc, char *argv[]) {
 
                         else if( check_if_mute_already_on) {
                             string origin = SERVER;
-                            response = origin + "\033[1;33m" + "The user : " + buffer_str + " is already muted. \033[0m";
+                            response = origin + "\033[1;33m" + buffer_str + " is already muted.\033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
                             send(sd, tmp, response.size() + 1, 0);
                             free(tmp);
@@ -532,7 +524,7 @@ int main(int argc, char *argv[]) {
                         else {   // nao foi encontrado o usuário a ser removido
                             
                             string origin = SERVER;
-                            response = origin + "\033[1;33mUser not found in your channel! \033[0m";
+                            response = origin + "\033[1;33mUser not found in your channel!\033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
                             send(sd, tmp, response.size() + 1, 0);
                             free(tmp);    
@@ -551,16 +543,20 @@ int main(int argc, char *argv[]) {
                         string channel_user_to_remove = find_channel(token_to_unmute);
                         bool check_if_mute_already_on = check_if_already_mute(token_to_unmute, adm_channel);
                         
-                        if (isAdm && token_to_unmute != -1 && channel_user_to_remove.compare(adm_channel)  == 0 && check_if_mute_already_on) {
+                        if(isAdm && token_to_unmute != -1 && channel_user_to_remove.compare(adm_channel)  == 0 && check_if_mute_already_on) {
                             // insere no vetor de mutes.
                             remove_from_mute(token_to_unmute, adm_channel);
                             string origin = SERVER;
-                            response = origin + "\033[1;34mChannel : " + adm_channel + ", unmuted : " + buffer_str + "\033[0m";
+                            response = origin + "\033[1;34m" + adm_channel + " unmuted " + buffer_str + "\033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
-                            send_to_all(client_socket, max_clients, tmp, 1 + response.length());
+                            int size_channel = int(channels[adm_channel].size());
+                            // percorrendo usuários do canal
+                            for (int i = 0; i < size_channel; i++)
+                                send(users[channels[adm_channel][i]].second, tmp, 1 + response.length(), 0);
+                            free(tmp);
                         }
 
-                        else if( !isAdm) { // induvíduo nao eh adm
+                        else if(!isAdm) { // induvíduo nao eh adm
                             // cout << "here 6" << endl;
                             string origin = SERVER;
                             response = origin + "\033[1;31mPERMISSION DENIED,YOU ARE NOT THE ADM!\033[0m";
@@ -572,7 +568,7 @@ int main(int argc, char *argv[]) {
                         else if( !check_if_mute_already_on) {
                             // cout << "here 7" << endl;
                             string origin = SERVER;
-                            response = origin + "\033[1;33m" + "The user : " + buffer_str + " is already unmuted. " + "\033[0m";
+                            response = origin + "\033[1;33m" + buffer_str + " is already unmuted." + "\033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
                             send(sd, tmp, response.size() + 1, 0);
                             free(tmp);
@@ -582,18 +578,16 @@ int main(int argc, char *argv[]) {
                             // cout << "here 5" << endl;
                             
                             string origin = SERVER;
-                            response = origin + "\033[1;33mUser not found in your channel! \033[0m";
+                            response = origin + "\033[1;33mUser not found in your channel!\033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
                             send(sd, tmp, response.size() + 1, 0);
                             free(tmp);              
                         } 
-                        
                     }
                     
                     // comando para se convidar alguem
                     else if(op_code == FLAG_INVITE[0]){
                         cout << "/invite " << buffer_str << endl;
-
 
                         bool isAdm = false;
                         string adm_channel = check_if_admin(token, &isAdm);
@@ -604,11 +598,9 @@ int main(int argc, char *argv[]) {
                         bool check_already_invited = check_if_already_invited(adm_channel, token_to_invite);
 
                         
-                        if (isAdm && token_to_invite != -1 &&  !check_already_invited)
-                        {
+                        if (isAdm && token_to_invite != -1 &&  !check_already_invited){
                             // se o usuario nao tiver nenhum invite cria o vetor de invites para ele
-                            if (invites[token_to_invite].empty())
-                            {
+                            if (invites[token_to_invite].empty()){
                                 vector <string> invites_to_create;
                                 invites[token_to_invite] = invites_to_create;
                             }
@@ -624,7 +616,7 @@ int main(int argc, char *argv[]) {
                             // cout << "here 6" << endl;
 
                             string origin = SERVER;
-                            response = origin + "\033[1;31mPERMISSION DENIED,YOU ARE NOT THE ADM  ! \033[0m";
+                            response = origin + "\033[1;31mPERMISSION DENIED,YOU ARE NOT THE ADM!\033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
                             send(sd, tmp, response.size() + 1, 0);   
                             free(tmp);           
@@ -657,8 +649,7 @@ int main(int argc, char *argv[]) {
                         string adm_channel = check_if_admin(token, &isAdm);
                         // cout << "here 1" << endl;
                         
-                        if (isAdm)
-                        {
+                        if(isAdm){
                             string mode_change = "";
                             if (buffer_str.compare("0") == 0){
                                 channel_status[adm_channel] = false;
@@ -678,7 +669,7 @@ int main(int argc, char *argv[]) {
                             // cout << "here 6" << endl;
 
                             string origin = SERVER;
-                            response = origin + "\033[1;31mPERMISSION DENIED,YOU ARE NOT THE ADM  ! \033[0m";
+                            response = origin + "\033[1;31mPERMISSION DENIED,YOU ARE NOT THE ADM! \033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
                             send(sd, tmp, response.size() + 1, 0);   
                             free(tmp);           
@@ -716,7 +707,7 @@ int main(int argc, char *argv[]) {
                     } 
 
                     // mensagem completa
-                    else if(op_code == FLAG_COMPLETE[0]) {
+                    else if(op_code == FLAG_COMPLETE[0]){
                         //procura e imprime o nome do usuário
                         print_name(clear_name(username), "green");
                         cache[token] += buffer_str;
@@ -730,7 +721,7 @@ int main(int argc, char *argv[]) {
                     }
 
                     // alguém se desconectou 
-                    else if(op_code == FLAG_EXIT[0]) {
+                    else if(op_code == FLAG_EXIT[0]){
                         //procura e imprime o nome do usuário
                         print_name(clear_name(username), "green");
                         string origin = SERVER;
@@ -738,19 +729,18 @@ int main(int argc, char *argv[]) {
                         //procura por suas informações e as imprime  
                         getpeername(sd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
 
-
-                        remove_user_from_channel(token,find_channel(token));
-                           
-
-                        print_name(NAME,"red");
-                        cout << "Host disconnected, ip " << inet_ntoa(address.sin_addr) << ", port " << ntohs(address.sin_port) << '\n';
-                        //envia mensagem de fim de conexão para os clientes
                         response = origin + "\033[1;31m" + username.substr(0,username.find('\0')) + " left the chat" + "\033[0m"; 
                         char *tmp = str_to_charA(response, 1 + size_message);
                         string userChannel = find_channel(token);
 
-                        if(userChannel.length() > 0) send_to_channel(client_socket, max_clients, tmp, 1 + size_message, userChannel, token);
+                        if(userChannel.length() > 0) send_to_channel(client_socket, max_clients, tmp, 1 + size_message, userChannel, token, true);
                         else send(sd, tmp, response.size() + 1, 0);
+
+                        remove_user_from_channel(token,find_channel(token));
+                           
+                        print_name(NAME,"red");
+                        cout << "Host disconnected, ip " << inet_ntoa(address.sin_addr) << ", port " << ntohs(address.sin_port) << '\n';
+                        //envia mensagem de fim de conexão para os clientes
 
                         free(tmp);
                         //Fecha o socket e marca como 0 na lista para reutilização  
@@ -769,7 +759,7 @@ int main(int argc, char *argv[]) {
                     }
 
                     // comando para sair de um canal
-                    else if(op_code == FLAG_LEAVE[0]) {
+                    else if(op_code == FLAG_LEAVE[0]){
                         //procura e imprime o nome do usuário
                         print_name(clear_name(username), "green");
                         string currentChannel = find_channel(token);
@@ -782,7 +772,7 @@ int main(int argc, char *argv[]) {
 
                             response = origin + "\033[1;33m" + clear_name(username) + " left " + currentChannel + "\033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
-                            send_to_channel(client_socket, max_clients, tmp, 1 + size_username + size_message,currentChannel, token);
+                            send_to_channel(client_socket, max_clients, tmp, 1 + size_username + size_message,currentChannel, token, true);
 
                             char *disconnected = str_to_charA(disconnected_response, disconnected_response.length());
                             send(users[token].second, disconnected, disconnected_response.length(), 0);
@@ -794,7 +784,7 @@ int main(int argc, char *argv[]) {
                     }
 
                     // comando "/ping"
-                    else if(op_code == FLAG_PING[0]) {
+                    else if(op_code == FLAG_PING[0]){
                         //procura e imprime o nome do usuário
                         print_name(clear_name(username), "green");
                         string origin = SERVER;
