@@ -62,6 +62,7 @@ int check_command(string command){
     if(command.compare(0, 5, "/part") == 0) return 10;
     if(command.compare(0, 9, "/commands") == 0) return 11;
     if(command.compare(0, 7, "/invite") == 0) return 12;
+    if(command.compare(0, 5, "/mode") == 0) return 13;
 
     return 0;
 }
@@ -262,6 +263,36 @@ void invite_user(int server_socket, string userToInvite){
     free(request);
 }
 
+void change_mode(int server_socket, string modeToChange){
+    string modeToSend = "1";
+    if (modeToChange.compare(0, 2, "+i") == 0)
+    {
+        cout << "hhaha, change chan to open"<<endl;
+        modeToSend = "1";
+    }
+    else if (modeToChange.compare(0, 2, "-i") == 0){
+        cout << "hhaha, change chan to CLOSE" << endl;
+        modeToSend = "0";
+    }
+    else{
+        print_name("System","green");
+        cout << "WRONG COMMAND, THE MODES ARE '+i' and '-i'" << endl;
+        return;
+    }
+
+    string message = FLAG_MODE + modeToSend;
+    // cout << " message  :" << message << endl;
+
+    string token_s = fill_nickname();
+    message = token_s + message;
+    // cout << " message  :" << message << endl;
+    char* request = str_to_charA(message, message.length() + size_token + 1);
+    send(server_socket, request, message.length() + size_token + 1, 0);
+    print_name("System","green");
+    cout << "Changing... " << endl;
+    free(request);
+}
+
 int socket_init() {
     int server_socket = 0;
     struct sockaddr_in serv_addr;
@@ -437,6 +468,9 @@ void send_message(int server_socket) {
                     break;
                 case 12:
                     invite_user(server_socket, message.substr(8));
+                    break;
+                case 13:
+                    change_mode(server_socket, message.substr(6));
                     break;
                 default:
                     break;
