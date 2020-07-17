@@ -265,11 +265,11 @@ void invite_user(int server_socket, string userToInvite){
 
 void change_mode(int server_socket, string modeToChange){
     string modeToSend = "1";
-    if (modeToChange.compare(0, 2, "+i") == 0)
+    if (modeToChange.compare(0, 2, "-i") == 0)
     {
         modeToSend = "1";
     }
-    else if (modeToChange.compare(0, 2, "-i") == 0){
+    else if (modeToChange.compare(0, 2, "+i") == 0){
         modeToSend = "0";
     }
     else{
