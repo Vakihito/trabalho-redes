@@ -267,11 +267,9 @@ void change_mode(int server_socket, string modeToChange){
     string modeToSend = "1";
     if (modeToChange.compare(0, 2, "+i") == 0)
     {
-        cout << "hhaha, change chan to open"<<endl;
         modeToSend = "1";
     }
     else if (modeToChange.compare(0, 2, "-i") == 0){
-        cout << "hhaha, change chan to CLOSE" << endl;
         modeToSend = "0";
     }
     else{
