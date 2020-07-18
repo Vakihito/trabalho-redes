@@ -592,7 +592,14 @@ int main(int argc, char const *argv[]) {
             cout << "Command not found" << endl;
         }
         
-        if(op_code == 2) return QUIT;
+        if(op_code == 2) {
+            string str_request = fill_nickname() + FLAG_EXIT;                //insere o código da operação e a mensagem          
+            char *request = str_to_charA(str_request,str_request.length());  //converte o formato para vetor de caracteres
+            send(sock, request, size_token + 1, 0);                          //envia a requisição ao servidor
+            free(request);
+            close(sock);
+            return 0;
+        }
 
         if(op_code == 4) {
             if(command.size() > 6) {
