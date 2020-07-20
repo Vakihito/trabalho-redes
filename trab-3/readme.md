@@ -1,6 +1,6 @@
 Trabalho feito por :
  - Luis Felipe Ribeiro Chaves   - 10801221
- - Henrique Tarzia Tadashi      - 10692210
+ - Henrique Tadashi Tarzia      - 10692210
  - Victor Akihito Kamada Tomita - 10692082 
 
 [@] Servidor:
