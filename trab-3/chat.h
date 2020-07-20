@@ -18,7 +18,7 @@ using namespace std;
 #define FLAG_INVITE "I"             //instrução para convidar um usuário para um canal
 #define FLAG_MODE "M"               //instrução para alterar as propriedades de um canal/usuário 
 
-#define SERVER_IP "187.66.63.241"       //endereço IP do servidor para efetuar conexão com o cliente
+#define SERVER_IP "127.0.0.1"       //endereço IP do servidor para efetuar conexão com o cliente
 
 //códigos presentes na resposta do servidor para os usuários
 #define INVALID_USERNAME 'r'  //nome de usuário repetido
