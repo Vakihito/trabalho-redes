@@ -398,6 +398,7 @@ int main(int argc, char *argv[]) {
 
                             // marcando o canal como aberto
                             channel_status[buffer_str] = true;
+                            origin = CONNECTED;
 
                             // enviando mensagem de resposta
                             responseAux = clear_name(users[token].first) + " created " + buffer_str;
@@ -408,7 +409,7 @@ int main(int argc, char *argv[]) {
                             free(tmp);
                         }
                         else if(!check_if_invited && !channel_status[buffer_str]){
-                            string origin = SERVER;
+                            origin = DISCONNECTED;
                             response = origin + "\033[1;31mYOU WERE NOT INVITED!\033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
                             send(sd, tmp, response.size() + 1, 0);   
@@ -424,6 +425,11 @@ int main(int argc, char *argv[]) {
                             char *tmp = str_to_charA(response, 1 + response.length());
                             send_to_channel(client_socket, max_clients, tmp, 1 + response.length(), buffer_str, token, true);
                             free(tmp);
+
+                            response = CONNECTED;
+                            char *tmp2 = str_to_charA(response, 1 + response.length());
+                            send(sd, tmp2, response.size() + 1, 0);
+                            free(tmp2);
                         }                    
                     }
                     

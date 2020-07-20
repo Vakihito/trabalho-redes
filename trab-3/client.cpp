@@ -547,15 +547,12 @@ void send_message(int server_socket) {
         else {
             switch(flag_command) {
                 case 4:
-                    if(check_valid_channel(message.substr(6))) {
+                    if(check_valid_channel(message.substr(6))) 
                         define_channel(server_socket, message.substr(6));
-                        connected = true;
-                    }
                     else {
                         print_name("System", "red");
                         print_text("Invalid channel name (Format: [#/&]name)", "yellow", true);
                     }
-                    
                     break;
                 case 9:
                     change_nickname(server_socket, message.substr(10));
@@ -606,7 +603,23 @@ void receive_message(int server_socket) {
 
         else if(sent_by == DISCONNECTED[0]) {
             connected = false;
-            show_commands();
+            string message = &tmp_buffer[1];
+
+            if(message.length() > 0) {
+                print_name("Server","red");  
+                cout << message << endl;
+            }
+
+            else show_commands();
+        }
+
+        else if(sent_by == CONNECTED[0]) {
+            connected = true;
+            string message = &tmp_buffer[1];
+            if(message.length() > 0) {
+                print_name("Server","green");  
+                cout << message << endl;
+            }
         }
 
         free(tmp_buffer);
