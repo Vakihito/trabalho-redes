@@ -49,27 +49,87 @@ int kbhit(void) {
     return 0;
 }
 
+/* Checa se o parâmetro "command" corresponde a um comando ou se ele apresenta os parâmetros requisitados */
 int check_command(string command){
     if(command.compare(0, 8,"/connect") == 0) return 1;
+
     if(command.compare(0, 5, "/quit") == 0) return 2;
+
     if(command.compare(0, 5, "/ping") == 0) return 3;
+
     if(command.compare(0, 5, "/join") == 0) return 4;
-    if(command.compare(0, 5, "/kick") == 0) return 5;
-    if(command.compare(0, 5, "/mute") == 0) return 6;
-    if(command.compare(0, 7, "/unmute") == 0) return 7;
-    if(command.compare(0, 6, "/whois") == 0) return 8;
-    if(command.compare(0, 9, "/nickname") == 0) return 9;
-    if(command.compare(0, 5, "/part") == 0) return 10;
+
+    if(command.compare(0, 5, "/kick") == 0) {
+       if(command.length() == 5) {
+           print_name("System", "red");
+           print_text("Missing username", "yellow", true);
+           return INCOMPLETE_COMMAND;
+       } 
+       return 5;
+    }
+
+    if(command.compare(0, 5, "/mute") == 0) {
+        if(command.length() == 5) {
+           print_name("System", "red");
+           print_text("Missing username", "yellow", true);
+           return INCOMPLETE_COMMAND;
+       } 
+        return 6;
+    }
+
+    if(command.compare(0, 7, "/unmute") == 0) {
+        if(command.length() == 7) {
+           print_name("System", "red");
+           print_text("Missing username", "yellow", true);
+           return INCOMPLETE_COMMAND;
+       } 
+        return 7;
+    }
+
+    if(command.compare(0, 6, "/whois") == 0) {
+        if(command.length() == 6) {
+           print_name("System", "red");
+           print_text("Missing username", "yellow", true);
+           return INCOMPLETE_COMMAND;
+       } 
+        return 8;
+    }
+
+    if(command.compare(0, 9, "/nickname") == 0) {
+        if(command.length() == 9) {
+           print_name("System", "red");
+           print_text("Missing username", "yellow", true);
+           return INCOMPLETE_COMMAND;
+       } 
+        return 9;
+    }
+
+    if(command.compare(0, 5, "/part") == 0) {
+        if(command.length() == 5) {
+           print_name("System", "red");
+           print_text("Missing channel", "yellow", true);
+           return INCOMPLETE_COMMAND;
+       } 
+       return 10;
+    }
+
     if(command.compare(0, 9, "/commands") == 0) return 11;
+
     if(command.compare(0, 7, "/invite") == 0) return 12;
-    if(command.compare(0, 5, "/mode") == 0) return 13;
+
+    if(command.compare(0, 5, "/mode") == 0) {
+        if(command.length() == 5) {
+           print_name("System", "red");
+           print_text("Incomplete command", "yellow", true);
+           return INCOMPLETE_COMMAND;
+       } 
+       return 13;
+    }
 
     return 0;
 }
 
-/* Para enviar o token do usuário pela mensagem precisamos de um tamanho padrão */
-/* esta função completa com zeros caso seja menor que o tamanho esperado */
-/* ex : se token = 32, precisa colocar 000032 */   
+/* Retorna o token no formato padrão para inserção no cabeçalho das requisições */  
 string fill_nickname(){
     string stoken_s = to_string(token);
     while (stoken_s.length() < size_token)
@@ -77,6 +137,7 @@ string fill_nickname(){
     return stoken_s;
 }
 
+/* Define o nome inicial do usuário na aplicação */
 string choose_username(int server_socket){
     string name;
     string message;
@@ -124,6 +185,7 @@ string choose_username(int server_socket){
     return username;
 }
 
+/* Altera o nome do usuário */
 void change_nickname(int server_socket, string newNickname){
 
     if(newNickname.length() > size_username) {
@@ -162,6 +224,7 @@ void change_nickname(int server_socket, string newNickname){
     return;
 }
 
+/* Verifica se o nome de canal atende os padrões definidos pela RFC */
 bool check_valid_channel(string channelAux){
     if(channelAux.length() < 1 || channelAux.length() > 200) return false;
     if(channelAux.find(',') != string::npos || channelAux.find(' ') != string::npos || channelAux.find(7) != string::npos) return false;
@@ -170,6 +233,7 @@ bool check_valid_channel(string channelAux){
     return true;
 }
 
+/* Encerra a conexão com o canal atual */
 void leave_channel(int server_socket, string channelName){
     string message = FLAG_LEAVE + channelName;
     string token_s = fill_nickname();
@@ -181,8 +245,8 @@ void leave_channel(int server_socket, string channelName){
     return;
 }
 
-void define_channel(int server_socket, string channelAux1){
-    
+/* Estabelece conexão com um canal */
+void define_channel(int server_socket, string channelAux1){  
     channel = FLAG_CHANNEL + channelAux1;
     string token_s = fill_nickname();
     string channelAux = token_s + channel;
@@ -196,6 +260,7 @@ void define_channel(int server_socket, string channelAux1){
     free(request);
 }
 
+/* Retira o usuário do canal */
 void kick_user(int server_socket, string userToKick){
 
     string message = FLAG_KICK + userToKick;
@@ -211,6 +276,7 @@ void kick_user(int server_socket, string userToKick){
     free(request);
 }
 
+/* Bloqueia o envio de mensagens do usuário no canal */
 void mute_user(int server_socket, string userToMute){
     string message = FLAG_MUTE + userToMute;
     // cout << " message  :" << message << endl;
@@ -224,6 +290,7 @@ void mute_user(int server_socket, string userToMute){
     free(request);
 }
 
+/* Remove o bloqueio de mensagens da instrução "mute" */
 void unmute_user(int server_socket, string userToUnmute){
     string message = FLAG_UNMUTE + userToUnmute;
     // cout << " message  :" << message << endl;
@@ -237,6 +304,7 @@ void unmute_user(int server_socket, string userToUnmute){
     free(request);
 }
 
+/* Requisição para descobrir o endereço ip do usuário especificado */
 void whois_user(int server_socket, string userToIdentify){
     string message = FLAG_WHOIS + userToIdentify;
     string token_s = fill_nickname();
@@ -248,6 +316,7 @@ void whois_user(int server_socket, string userToIdentify){
     free(request);
 }
 
+/* Requisição para convidar um usuário a um canal "invite-only" */
 void invite_user(int server_socket, string userToInvite){
 
     string message = FLAG_INVITE + userToInvite;
@@ -263,6 +332,7 @@ void invite_user(int server_socket, string userToInvite){
     free(request);
 }
 
+/* Requisição para alterar o modo de permissão de entrada do canal atual */
 void change_mode(int server_socket, string modeToChange){
     string modeToSend = "1";
     if (modeToChange.compare(0, 2, "-i") == 0)
@@ -272,9 +342,9 @@ void change_mode(int server_socket, string modeToChange){
     else if (modeToChange.compare(0, 2, "+i") == 0){
         modeToSend = "0";
     }
-    else{
-        print_name("System","green");
-        cout << "WRONG COMMAND, THE MODES ARE '+i' and '-i'" << endl;
+    else{   
+        print_name("System","red");
+        print_text("WRONG COMMAND, THE MODES ARE '+i' and '-i'","yellow", true);
         return;
     }
 
@@ -291,6 +361,7 @@ void change_mode(int server_socket, string modeToChange){
     free(request);
 }
 
+/* Estabele conexão com o servidor. Caso tenha excedido o número de tentativas, retorna a flag QUIT */
 int socket_init() {
     int server_socket = 0;
     struct sockaddr_in serv_addr;
@@ -308,7 +379,7 @@ int socket_init() {
     serv_addr.sin_port = htons(PORT); 
 
     // converte endereços IPv4 e IPv6 addresses de texto para o formato binário 
-    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr)<=0) { 
+    if(inet_pton(AF_INET, SERVER_IP, &serv_addr.sin_addr)<=0) { 
         perror("Invalid or unsupported address\n");
         return -1; 
     } 
@@ -343,6 +414,7 @@ int socket_init() {
     return server_socket;   
 }
 
+/* Exibe os comandos permitidos quando o usuário não se encontra conectado a um canal, exceto "/ping" e "/quit" */
 void show_commands() {
     cout << endl;
     print_text("/join", "blue", false);
@@ -362,6 +434,7 @@ void show_commands() {
     return;
 }
 
+/* Exibe os comandos disponíveis para usuários conectados a um canal, especificando o nível de permissão e os seus parâmetros */
 void show_channel_commands() {
     cout << endl;
     print_text("[@]", "blue", false);
@@ -378,7 +451,7 @@ void show_channel_commands() {
     print_text(" [+/-]i", "green", false);
     print_text(" - Adiciona/remove restrição invite-only do canal", "white", true);
     print_text("/invite", "yellow", false);
-    print_text(" nickname channel", "green", false);
+    print_text(" nickname", "green", false);
     print_text(" - Concede permissão para o usuário entrar em canal invite-only", "white", true);
     print_text("/mute", "yellow", false);
     print_text(" nickname", "green", false);
@@ -397,6 +470,7 @@ void show_channel_commands() {
     return;
 }
 
+/* Envia mensagem para o servidor */
 void send_message(int server_socket) {
     string message;                            //mensagem do usuário
     int id_lenght;                             //número de caracteres ocupados pelo id do cliente (incluindo o '\0')
@@ -444,11 +518,6 @@ void send_message(int server_socket) {
         //comandos disponíveis para um usuário conectado em um canal
         if(connected) {
             switch(flag_command) {
-                case 4:
-                    check_valid_channel(message.substr(6));
-                    define_channel(server_socket, message.substr(6));
-                    connected = true;
-                    break;
                 case 5:
                     kick_user(server_socket, message.substr(6));
                     break;
@@ -478,9 +547,15 @@ void send_message(int server_socket) {
         else {
             switch(flag_command) {
                 case 4:
-                    check_valid_channel(message.substr(6));
-                    define_channel(server_socket, message.substr(6));
-                    connected = true;
+                    if(check_valid_channel(message.substr(6))) {
+                        define_channel(server_socket, message.substr(6));
+                        connected = true;
+                    }
+                    else {
+                        print_name("System", "red");
+                        print_text("Invalid channel name (Format: [#/&]name)", "yellow", true);
+                    }
+                    
                     break;
                 case 9:
                     change_nickname(server_socket, message.substr(10));
@@ -495,6 +570,7 @@ void send_message(int server_socket) {
     return;   
 }
 
+/* Recebe mensagem do servidor, exibindo a resposta de acordo com o seu conteúdo */
 void receive_message(int server_socket) {
     int valread;
     string message, buffer;
@@ -583,58 +659,13 @@ int main(int argc, char const *argv[]) {
     string channelAux;
     bool channelChecker = false;
 
-    do {
-        print_name("User", "yellow");
-        getline(cin, command);
-        op_code = check_command(command);
-        if(op_code == 0) {
-            print_name("System", "red");
-            cout << "Command not found" << endl;
-        }
-        
-        if(op_code == 2) {
-            string str_request = fill_nickname() + FLAG_EXIT;                //insere o código da operação e a mensagem          
-            char *request = str_to_charA(str_request,str_request.length());  //converte o formato para vetor de caracteres
-            send(sock, request, size_token + 1, 0);                          //envia a requisição ao servidor
-            free(request);
-            close(sock);
-            return 0;
-        }
-
-        if(op_code == 4) {
-            if(command.size() > 6) {
-                channelAux = command.substr(6);
-                channelChecker = true;
-                if(!check_valid_channel(channelAux)){
-                    print_name("System", "red");
-                    cout << "invalid channel" << endl;
-                    channelChecker = false;
-                }
-            }
-            else {
-                print_name("System", "red");
-                cout << "channel not defined" << endl;
-            }
-        }
-
-        else if(op_code == 9 && command.size() > 9) {
-            string newNickname = command.substr(10);
-            change_nickname(sock, newNickname);
-        }
-        
-        else if(op_code == 11)
-            show_channel_commands();
-    } while(op_code != 4 || !channelChecker);
-
-    define_channel(sock, channelAux);
-
     if(sock == QUIT) {
         print_name("System","yellow");
         cout << "Closing application..." << endl;
         return 0;
     }
 
-    connected = true;
+    connected = false;
     thread receive_thread(receive_message, sock);
     thread response_thread(send_message, sock);
 

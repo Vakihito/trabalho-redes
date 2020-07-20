@@ -181,9 +181,7 @@ bool check_if_already_invited (string chan, int token_to_invite ){
     return false;
 }
 
-/* Para enviar o token do usuário pela mensagem precisamos de um tamanho padrão */
-/* esta função completa com zeros caso seja menor que o tamanho esperado */
-/* ex : se token = 32, precisa colocar 000032 */   
+/* Retorna o token no formato padrão para inserção no cabeçalho das respostas */  
 string fill_nickname(int token) {
     string stoken_s = to_string(token);
     while (stoken_s.length() < size_token)
@@ -606,11 +604,12 @@ int main(int argc, char *argv[]) {
                             }
                             
                             invites[token_to_invite].push_back(adm_channel);
+                            int socket_to_invite  = users[token_to_invite].second;
 
                             string origin = SERVER;
-                            response = origin + "\033[1;34mChannel : " + adm_channel + ", invited : " + buffer_str + "\033[0m";
+                            response = origin + "\033[1;34m" + adm_channel + " invited " + buffer_str + " to join the channel\033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
-                            send_to_all(client_socket, max_clients, tmp, 1 + response.length());
+                            send(socket_to_invite, tmp, 1 + response.length(), 0);
                         }
                         else if( !isAdm){ // induvíduo nao eh adm
                             // cout << "here 6" << endl;
@@ -647,7 +646,6 @@ int main(int argc, char *argv[]) {
 
                         bool isAdm = false;
                         string adm_channel = check_if_admin(token, &isAdm);
-                        // cout << "here 1" << endl;
                         
                         if(isAdm){
                             string mode_change = "";
@@ -661,21 +659,17 @@ int main(int argc, char *argv[]) {
                             }
                             
                             string origin = SERVER;
-                            response = origin + "\033[1;34m The Channel : " + adm_channel + " is " + mode_change + "\033[0m";
+                            response = origin + "\033[1;34m"+ adm_channel + " mode changed to " + mode_change + "\033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
-                            send_to_all(client_socket, max_clients, tmp, 1 + response.length());
+                            send_to_channel(client_socket, max_clients, tmp, 1 + response.length(), adm_channel, token, true);
                         }
                         else{ // induvíduo nao eh adm
-                            // cout << "here 6" << endl;
-
                             string origin = SERVER;
                             response = origin + "\033[1;31mPERMISSION DENIED,YOU ARE NOT THE ADM! \033[0m";
                             char *tmp = str_to_charA(response, 1 + response.length());
                             send(sd, tmp, response.size() + 1, 0);   
                             free(tmp);           
-                        }
-
-                        
+                        }       
                     }
 
                     // comando para identificar o ip de uma pessoa

@@ -18,6 +18,8 @@ using namespace std;
 #define FLAG_INVITE "I"             //instrução para convidar um usuário para um canal
 #define FLAG_MODE "M"               //instrução para alterar as propriedades de um canal/usuário 
 
+#define SERVER_IP "127.0.0.1"       //endereço IP do servidor para efetuar conexão com o cliente
+
 //códigos presentes na resposta do servidor para os usuários
 #define INVALID_USERNAME 'r'  //nome de usuário repetido
 #define VALID_USERNAME 'a'    //nome de usuário aceito
@@ -26,6 +28,7 @@ using namespace std;
 #define DISCONNECTED "d"      //usuário removido do canal       
 
 //constantes utilizadas para a construção e processamento das requisições dos usuários
+#define INCOMPLETE_COMMAND -1// comando incompleto
 #define PORT 8888            // número da porta de comunicação
 #define QUIT -9999           // código de encerramento/falha na comunicação do cliente com o servidor
 #define max_token 999999     // maior valor de token
